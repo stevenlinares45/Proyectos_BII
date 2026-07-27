@@ -1,0 +1,11 @@
+# Nunca subir archivos reales de proyecto (pbix/pbip con datos, exports, capturas reales)
+*.pbix
+*.pbip
+*.pbit
+*.csv
+*.xlsx
+*.docx
+*.pdf
+node_modules/
+.DS_Store
+Thumbs.db
