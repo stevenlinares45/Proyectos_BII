@@ -22,6 +22,10 @@ Trabajo end-to-end en proyectos de BI: desde el levantamiento de requerimientos 
 | 06 | [Data Hub de Marketing](proyectos/06-data-hub-marketing/) | En fase de levantamiento de requerimientos | — |
 | 07 | [Dashboard — Sector Alimentos y Bebidas](proyectos/07-dashboard-sector-alimentos/) | Reporte Power BI | Power BI |
 
+## Recursos técnicos
+
+- 📘 [Playbook Operativo de Ingeniería de Datos](playbook-operativo-v2.html) — guía de referencia personal (no un caso de cliente) con metodología de proyecto, estrategias de carga e idempotencia, SQL, Databricks, GCP/BigQuery y Microsoft Fabric.
+
 ## Cómo sigo alimentando este portafolio
 
 Cada vez que cierro un proyecto nuevo, agrego una carpeta en `proyectos/` siguiendo esta plantilla mínima:
