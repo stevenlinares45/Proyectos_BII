@@ -46,12 +46,5 @@ Cada vez que cierro un proyecto nuevo, agrego una carpeta en `proyectos/` siguie
 ## Resultado
 ```
 
-**Checklist antes de publicar un proyecto nuevo:**
-- [ ] ¿El nombre del cliente aparece en algún lado (texto, código, nombre de archivo)? → quitarlo.
-- [ ] ¿Hay cifras reales (montos, volúmenes, conteos)? → reemplazar por ejemplos ficticios o quitar.
-- [ ] ¿Hay nombres reales de tablas/esquemas/proyectos de BigQuery, servidores o sistemas internos? → reemplazarlos por nombres genéricos (`fact_x`, `dim_y`).
-- [ ] ¿Las capturas de pantalla muestran datos reales? → no incluir, o recrear con datos ficticios.
-- [ ] ¿El código (SQL/DAX/M) es una copia literal de un archivo real? → reescribirlo desde cero con nombres genéricos, no solo "limpiarlo".
-
 ## Contacto
-_(agrega aquí tu LinkedIn / correo de contacto profesional)_
+[LinkedIn](https://www.linkedin.com/in/jesus-steven-linares/) · [stevenlinares45@gmail.com](mailto:stevenlinares45@gmail.com)
