@@ -25,6 +25,7 @@ Trabajo end-to-end en proyectos de BI: desde el levantamiento de requerimientos 
 ## Recursos técnicos
 
 - 📘 [Playbook Operativo de Ingeniería de Datos](playbook-operativo-v2.html) — guía de referencia personal (no un caso de cliente) con metodología de proyecto, estrategias de carga e idempotencia, SQL, Databricks, GCP/BigQuery y Microsoft Fabric.
+- 🛠️ [Generador de estructura estándar para proyectos de datos](herramientas/generador-estructura-proyectos/) — script en Python que crea, en segundos, la estructura de carpetas estándar (`00_Backup` / `01_Docs` / `02_BigQuery` / `03_PowerBI`) para cualquier proyecto de BigQuery + Power BI, con asistente interactivo incluido.
 
 ## Cómo sigo alimentando este portafolio
 
