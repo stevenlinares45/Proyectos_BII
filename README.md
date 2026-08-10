@@ -21,11 +21,11 @@ Trabajo end-to-end en proyectos de BI: desde el levantamiento de requerimientos 
 | 05 | [Tablero de Gestión de Activos y Servicio Técnico](proyectos/05-tablero-gestion-activos-mantenimiento/) | Consolidación analítica de un sistema de gestión de activos | Power BI |
 | 06 | [Data Hub de Marketing](proyectos/06-data-hub-marketing/) | En fase de levantamiento de requerimientos | — |
 | 07 | [Dashboard — Sector Alimentos y Bebidas](proyectos/07-dashboard-sector-alimentos/) | Reporte Power BI | Power BI |
+| 08 | [Generador de Estructura Estándar de Proyectos](proyectos/08-generador-estructura-proyectos/) | Herramienta propia en Python — automatiza la creación de la estructura estándar de carpetas para proyectos nuevos | Python |
 
 ## Recursos técnicos
 
 - 📘 [Playbook Operativo de Ingeniería de Datos](playbook-operativo-v2.html) — guía de referencia personal (no un caso de cliente) con metodología de proyecto, estrategias de carga e idempotencia, SQL, Databricks, GCP/BigQuery y Microsoft Fabric.
-- 🛠️ [Generador de estructura estándar para proyectos de datos](herramientas/generador-estructura-proyectos/) — script en Python que crea, en segundos, la estructura de carpetas estándar (`00_Backup` / `01_Docs` / `02_BigQuery` / `03_PowerBI`) para cualquier proyecto de BigQuery + Power BI, con asistente interactivo incluido.
 
 ## Cómo sigo alimentando este portafolio
 
