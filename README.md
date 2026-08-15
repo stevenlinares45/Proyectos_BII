@@ -21,6 +21,7 @@ Trabajo end-to-end en proyectos de BI: desde el levantamiento de requerimientos 
 | 05 | [Tablero de Gestión de Activos y Servicio Técnico](proyectos/05-tablero-gestion-activos-mantenimiento/) | Consolidación analítica de un sistema de gestión de activos | Power BI |
 | 06 | [Data Hub de Marketing](proyectos/06-data-hub-marketing/) | En fase de levantamiento de requerimientos | — |
 | 07 | [Dashboard — Sector Alimentos y Bebidas](proyectos/07-dashboard-sector-alimentos/) | Reporte Power BI | Power BI |
+| 08 | [Transporte y Logística — Supply Chain Analytics](proyectos/08-transporte-logistica-supply-chain/) | Pipeline end-to-end (Bronze/Silver/Gold) sobre dataset público de logística; modelo dimensional para Power BI | Databricks · Delta Lake · SQL · Power BI |
 
 ## Recursos técnicos
 
