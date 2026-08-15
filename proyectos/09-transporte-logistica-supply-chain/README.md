@@ -59,7 +59,7 @@ Pipeline Bronze → Silver → Gold corriendo en Databricks sin pérdida de fila
 ## Estructura de este proyecto
 
 ```
-08-transporte-logistica-supply-chain/
+09-transporte-logistica-supply-chain/
 ├── README.md
 ├── sql/
 │   ├── 01_bronze.sql       -- ingesta cruda
