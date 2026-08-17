@@ -1,0 +1,93 @@
+// ============================================================
+// MEDIDAS DAX — Proyecto Transporte y Logistica (DataCo)
+// Tabla: fact_envios | Modelo: bootcamp.transporte_gold
+// ============================================================
+// Convencion: todas las medidas viven en fact_envios (tabla de
+// hechos), organizadas por Display Folder. Nunca se crean
+// medidas sobre tablas de dimension.
+// ============================================================
+
+// ---------- 01 Volumen ----------
+
+Total Envios =
+COUNTROWS ( fact_envios )
+// FormatString: #,0
+
+Clientes Distintos =
+DISTINCTCOUNT ( fact_envios[sk_cliente] )
+// FormatString: #,0
+
+
+// ---------- 02 Ventas y Rentabilidad ----------
+
+Ventas Totales =
+SUM ( fact_envios[sales] )
+// FormatString: $#,0
+
+Beneficio Total =
+SUM ( fact_envios[order_profit_per_order] )
+// FormatString: $#,0
+
+Margen % =
+DIVIDE ( [Beneficio Total], [Ventas Totales] )
+// FormatString: 0.0%
+
+
+// ---------- 03 Cumplimiento de Entrega ----------
+
+% Entregas Tardias =
+DIVIDE (
+    CALCULATE ( COUNTROWS ( fact_envios ), fact_envios[delivery_status] = "Late delivery" ),
+    [Total Envios]
+)
+// FormatString: 0.0%
+
+% Riesgo de Atraso =
+DIVIDE (
+    CALCULATE ( COUNTROWS ( fact_envios ), fact_envios[late_delivery_risk] = TRUE ),
+    [Total Envios]
+)
+// FormatString: 0.0%
+
+
+// ---------- 04 Tiempos de Entrega ----------
+
+Dias Promedio Reales =
+AVERAGE ( fact_envios[days_for_shipping_real] )
+// FormatString: 0.0
+
+Dias Promedio Programados =
+AVERAGE ( fact_envios[days_for_shipment_scheduled] )
+// FormatString: 0.0
+
+Diferencia Promedio Dias =
+AVERAGE ( fact_envios[dias_diferencia_entrega] )
+// FormatString: 0.0
+// Nota: dias_diferencia_entrega ya viene calculado en Gold
+// (days_for_shipping_real - days_for_shipment_scheduled)
+
+
+// ---------- 05 Tendencia ----------
+
+Ventas por Fecha de Envio =
+CALCULATE (
+    [Ventas Totales],
+    USERELATIONSHIP ( fact_envios[sk_fecha_envio], dim_fecha[sk_fecha] )
+)
+// FormatString: $#,0
+// Nota: fact_envios tiene 2 relaciones con dim_fecha (pedido y envio).
+// La activa por defecto es sk_fecha_pedido -> dim_fecha[sk_fecha].
+// Esta medida activa la relacion alterna via USERELATIONSHIP
+// para analizar por fecha de ENVIO en lugar de fecha de PEDIDO.
+
+
+// ============================================================
+// Hallazgos validados con estas medidas (ver dashboard):
+// - Total Envios = 180.519 (cuadra con Bronze/Silver/Gold)
+// - Ventas Totales = $36,78M | Beneficio Total = $3,97M | Margen 10,8%
+// - % Entregas Tardias = 54,8% (igual a % Riesgo de Atraso)
+// - Dias Promedio Reales 3,50 vs Programados 2,93 (+0,57 dias de desvio)
+// - Clientes Distintos = 20.652
+// - Paradoja: "First Class" (envio mas caro) tiene la peor tardanza (95,3%)
+//   vs "Standard Class" que es la mejor (38,1%)
+// ============================================================

@@ -9,3 +9,12 @@
 node_modules/
 .DS_Store
 Thumbs.db
+
+# Excepcion: el proyecto 09 usa un dataset publico (no confidencial) y el .pbip/.pbix
+# SON el entregable versionado (sin datos de cliente reales)
+!proyectos/09-transporte-logistica-supply-chain/*.pbip
+!proyectos/09-transporte-logistica-supply-chain/*.pbix
+
+# Artefactos locales de Power BI Desktop (cache/config de maquina, no versionar nunca)
+**/.pbi/cache.abf
+**/.pbi/localSettings.json

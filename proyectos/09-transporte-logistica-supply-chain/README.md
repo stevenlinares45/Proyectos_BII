@@ -54,19 +54,31 @@ Databricks (Unity Catalog, Delta Lake, SQL Warehouse serverless) · SQL · Power
 
 ## Resultado
 
-Pipeline Bronze → Silver → Gold corriendo en Databricks sin pérdida de filas entre capas (180.519 → 180.519 → 180.519) y con los 6 checks de calidad en verde. Modelo Star Schema listo para conectar a Power BI y construir el dashboard de KPIs logísticos.
+Pipeline Bronze → Silver → Gold corriendo en Databricks sin pérdida de filas entre capas (180.519 → 180.519 → 180.519) y con los 6 checks de calidad en verde. Dashboard de Power BI de 3 páginas (Resumen Ejecutivo, Análisis Detallado, Tendencia Histórica) conectado en vivo al modelo Star Schema.
+
+## Dashboard de Power BI
+
+Archivo: [`transporte-logistica-supply-chain.pbix`](transporte-logistica-supply-chain.pbix) — abrilo directo con Power BI Desktop.
+
+- **KPIs en HTML** (tarjetas con ícono, color condicional según umbral de riesgo).
+- **Tablas HTML interactivas** (jerarquía Mercado→Región y Año→Mes, con badges de variación interanual) en vez de tablas nativas.
+- **Segmentadores unificados** (Año, Modo de Envío, Región, Categoría, Segmento de Cliente) en la misma posición en las 3 páginas.
+- Medidas DAX organizadas en tabla `_Dax` (ver [`_Dax/medidas.dax`](_Dax/medidas.dax) para las medidas base — el `.pbix` tiene además las medidas de HTML Content, generadas directo en el modelo).
 
 ## Estructura de este proyecto
 
 ```
 09-transporte-logistica-supply-chain/
 ├── README.md
+├── transporte-logistica-supply-chain.pbix   -- dashboard completo
 ├── sql/
 │   ├── 01_bronze.sql       -- ingesta cruda
 │   ├── 02_silver.sql       -- limpieza, tipado, anonimización
 │   ├── 03_gold.sql         -- star schema (fact + 5 dims)
 │   └── 04_dq_checks.sql    -- 6 checks de calidad
+├── _Dax/
+│   └── medidas.dax         -- medidas base documentadas
 └── docs/
 ```
 
-> Los datos (CSV origen y tablas Delta) **no se versionan en este repo** — viven en Databricks (Volume + Unity Catalog). Acá solo queda el código, siguiendo la convención del resto del portafolio.
+> Los datos crudos (CSV origen y tablas Delta) **no se versionan en este repo** — viven en Databricks (Volume + Unity Catalog) y se importan al `.pbix` por conexión directa. Acá solo queda el código y el dashboard, siguiendo la convención del resto del portafolio.
