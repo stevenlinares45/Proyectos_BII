@@ -421,6 +421,12 @@
     <a href="#f4"><span class="n">6</span> 🔍 Validar la calidad</a>
     <a href="#f5"><span class="n">7</span> 📡 Orquestar y desplegar</a>
     <a href="#orquestacion"><span class="n"><svg class="ic"><use href="#i-r"/></svg></span> 🌬️ Orquestación: Airflow y alternativas</a>
+    <div class="grp">🛡️ Confiabilidad y producción</div>
+    <a href="#testing"><span class="n"><svg class="ic"><use href="#i-tl"/></svg></span> 🧪 Testing de pipelines</a>
+    <a href="#observabilidad"><span class="n"><svg class="ic"><use href="#i-doc"/></svg></span> 📈 Observabilidad y logging</a>
+    <a href="#cicd"><span class="n"><svg class="ic"><use href="#i-dl"/></svg></span> 🔁 CI/CD para proyectos de datos</a>
+    <a href="#iac"><span class="n"><svg class="ic"><use href="#i-tp"/></svg></span> 🧱 Infraestructura como código</a>
+    <a href="#seguridad"><span class="n"><svg class="ic"><use href="#i-s"/></svg></span> 🔐 Seguridad y gobierno de datos</a>
     <div class="grp">☁️ Plataformas</div>
     <a href="#databricks"><span class="n"><svg class="ic"><use href="#i-c"/></svg></span> 🧱 Databricks</a>
     <a href="#sdk-db"><span class="n"><svg class="ic"><use href="#i-f"/></svg></span> 🐍 SDK de Databricks</a>
@@ -537,6 +543,11 @@
           <tr><td>Me piden garantizar que los datos son confiables</td><td><a href="#f4">Fase 4 · Calidad</a></td></tr>
           <tr><td>Tengo que dejarlo corriendo automático</td><td><a href="#f5">Fase 5 · Orquestar y desplegar</a></td></tr>
           <tr><td>Necesito armar un DAG de Airflow o elegir orquestador</td><td><a href="#orquestacion">Orquestación: Airflow y alternativas</a></td></tr>
+          <tr><td>Quiero probar mi pipeline antes de que lo vea alguien más</td><td><a href="#testing">Testing de pipelines</a></td></tr>
+          <tr><td>Necesito saber si mi pipeline corrió bien sin revisar a mano</td><td><a href="#observabilidad">Observabilidad y logging</a></td></tr>
+          <tr><td>Quiero que los tests y el deploy corran solos</td><td><a href="#cicd">CI/CD para proyectos de datos</a></td></tr>
+          <tr><td>Necesito crear infraestructura repetible entre ambientes</td><td><a href="#iac">Infraestructura como código</a></td></tr>
+          <tr><td>Tengo que definir quién puede ver qué datos</td><td><a href="#seguridad">Seguridad y gobierno de datos</a></td></tr>
           <tr><td>Voy a trabajar en otra computadora</td><td><a href="#setup">Anexo · Migrar tu entorno</a></td></tr>
         </tbody>
       </table></div>
@@ -3654,6 +3665,446 @@ default_args = {
 
       <div class="nav-chap">
         <a href="#f5"><svg class="ic"><use href="#i-a"/></svg> Orquestar y desplegar</a>
+        <a href="#testing" class="next">Testing de pipelines <svg class="ic"><use href="#i-a"/></svg></a>
+      </div>
+    </section>
+
+<!-- ===== TESTING DE PIPELINES ===== -->
+<section id="testing">
+      <div class="sec-hd"><div class="sec-n"><svg class="ic"><use href="#i-tl"/></svg></div>
+        <div><div class="sec-k">Confiabilidad y producción</div><h2 class="sec">🧪 Testing de pipelines</h2></div></div>
+      <p class="lead">Los controles de calidad (<a href="#f4">Fase 4</a>) revisan si <strong>los datos</strong> están bien. El testing revisa si <strong>el código</strong> del pipeline está bien — antes de que toque un solo dato real.</p>
+
+      <div class="blk obj"><div class="h"><svg class="ic"><use href="#i-t"/></svg> Objetivo</div><div class="b">
+        <p>Probar la lógica de un pipeline con datos de mentira, rápido y en cualquier momento, sin depender de que el ambiente de datos reales esté disponible o limpio.</p></div></div>
+
+      <h3><span class="hn">01</span> En qué se diferencia de los controles de calidad</h3>
+      <div class="tw"><table>
+        <thead><tr><th></th><th>Controles de calidad (§f4)</th><th>Testing de pipelines</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Qué revisa</strong></td><td>Los datos reales que produjo el pipeline</td><td>La lógica del código, con datos inventados</td></tr>
+          <tr><td><strong>Cuándo corre</strong></td><td>Después de cada carga, en producción</td><td>Antes de mergear, en cada Pull Request</td></tr>
+          <tr><td><strong>Detecta</strong></td><td>Nulos, duplicados, rangos fuera de lo esperado</td><td>Un <code>JOIN</code> mal escrito, una columna que cambió de tipo, una regresión</td></tr>
+          <tr><td><strong>Necesita</strong></td><td>Datos reales (o de staging)</td><td>Datos sintéticos, chicos y deterministas</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note i"><b>Los dos son necesarios, no se reemplazan</b>
+        El testing te dice que el código hace lo que vos creés que hace. Los controles de calidad te dicen que los datos de hoy siguen siendo confiables. Un pipeline en producción necesita ambos.</div>
+
+      <h3><span class="hn">02</span> Datos sintéticos: probar sin tocar producción</h3>
+      <p>Un test no debería depender de que exista una tabla real con datos reales. Se arma un DataFrame chico, a mano, que cubra los casos que te importan.</p>
+      <figure class="code"><figcaption><span class="lg">python · pytest + pyspark · datos sintéticos</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="k">import</span> pytest
+<span class="k">from</span> pyspark.sql <span class="k">import</span> Row
+<span class="k">from</span> mi_pipeline <span class="k">import</span> limpiar_ventas
+
+<span class="k">def</span> test_deduplica_por_venta_mas_reciente(spark):
+    <span class="c"># Datos sintéticos: dos filas de la misma venta, distinta fecha de carga</span>
+    datos = [
+        Row(id_venta=<span class="s">"V1"</span>, monto=100, _ingested_at=<span class="s">"2024-01-01"</span>),
+        Row(id_venta=<span class="s">"V1"</span>, monto=150, _ingested_at=<span class="s">"2024-01-02"</span>),  <span class="c"># la correcta</span>
+    ]
+    df = spark.createDataFrame(datos)
+
+    resultado = limpiar_ventas(df)
+
+    <span class="k">assert</span> resultado.count() == 1                              <span class="c"># se dedup a una fila</span>
+    <span class="k">assert</span> resultado.collect()[0][<span class="s">"monto"</span>] == 150               <span class="c"># quedó la más reciente</span></pre></figure>
+
+      <h3><span class="hn">03</span> Test de idempotencia, automatizado</h3>
+      <p>La prueba manual de "correr el pipeline dos veces y comparar conteos" (ver <a href="#cargas">Estrategias de carga</a>) se convierte en un test que corre solo, en cada Pull Request:</p>
+      <figure class="code"><figcaption><span class="lg">python · pytest · idempotencia</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="k">def</span> test_pipeline_es_idempotente(spark, tabla_temporal):
+    ejecutar_pipeline(fecha=<span class="s">"2024-06-01"</span>)
+    conteo_1 = spark.table(tabla_temporal).count()
+
+    ejecutar_pipeline(fecha=<span class="s">"2024-06-01"</span>)  <span class="c"># correr de nuevo, misma fecha</span>
+    conteo_2 = spark.table(tabla_temporal).count()
+
+    <span class="k">assert</span> conteo_1 == conteo_2, <span class="s">"El pipeline duplicó filas al re-ejecutarse"</span></pre></figure>
+
+      <h3><span class="hn">04</span> Contratos de esquema: fallar antes, no después</h3>
+      <p>Un contrato de esquema valida que la fuente sigue teniendo las columnas y tipos que tu pipeline espera, <strong>antes</strong> de procesar — no cuando el reporte del negocio ya se rompió.</p>
+      <figure class="code"><figcaption><span class="lg">python · contrato de esquema mínimo</span><button class="cp">Copiar</button></figcaption>
+<pre>COLUMNAS_ESPERADAS = {<span class="s">"id_venta"</span>: <span class="s">"string"</span>, <span class="s">"monto"</span>: <span class="s">"decimal"</span>, <span class="s">"fecha_venta"</span>: <span class="s">"date"</span>}
+
+<span class="k">def</span> validar_contrato(df):
+    reales = dict(df.dtypes)
+    <span class="k">for</span> col, tipo <span class="k">in</span> COLUMNAS_ESPERADAS.items():
+        <span class="k">if</span> col <span class="k">not</span> <span class="k">in</span> reales:
+            <span class="k">raise</span> ValueError(<span class="s">f"Falta la columna esperada: {col}"</span>)
+        <span class="k">if</span> tipo <span class="k">not</span> <span class="k">in</span> reales[col]:
+            <span class="k">raise</span> ValueError(<span class="s">f"Columna {col} cambió de tipo: esperaba {tipo}, llegó {reales[col]}"</span>)</pre></figure>
+      <div class="note w"><b>Este es el patrón que evita el "schema drift" del caso de Fabric</b>
+        Es exactamente el problema del <a href="#fabric">caso práctico de Fabric</a>: el ERP agrega una columna o cambia un tipo, y el pipeline se rompe silenciosamente varios pasos después. Un contrato de esquema lo detecta en el primer paso, con un error claro.</div>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Buenas prácticas</div><div class="b">
+        <ul>
+          <li><strong>Los tests corren en cada Pull Request</strong>, como parte del CI (ver <a href="#cicd">CI/CD</a>) — no a mano, de vez en cuando.</li>
+          <li><strong>Datos sintéticos chicos y deterministas.</strong> 5 filas que cubren los casos límite valen más que una copia de producción.</li>
+          <li><strong>Un test por comportamiento</strong>, no un test gigante que prueba todo el pipeline junto — si falla, tenés que saber qué falló sin adivinar.</li>
+          <li><strong>Probá los casos límite a propósito:</strong> nulos, fechas futuras, montos negativos, IDs duplicados.</li>
+        </ul></div></div>
+
+      <div class="blk err"><div class="h"><svg class="ic"><use href="#i-w"/></svg> Errores comunes</div><div class="b">
+        <ul>
+          <li><strong>Testear contra una copia de producción.</strong> Es lento, no es determinista (los datos cambian) y expone datos reales donde no corresponde.</li>
+          <li><strong>Cero tests hasta que algo se rompe dos veces.</strong> El costo de escribir el test siempre es menor después del segundo incidente.</li>
+          <li><strong>Tests que nadie mantiene</strong> cuando cambia el pipeline. Un test rojo que se ignora "porque siempre falla" ya no protege nada.</li>
+        </ul></div></div>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Checklist · Testing mínimo viable</div><div class="b">
+      <ul class="ck" data-k="testing">
+        <li><label><input type="checkbox"> Hay al menos un test de idempotencia por pipeline</label></li>
+        <li><label><input type="checkbox"> Hay un contrato de esquema para cada fuente externa</label></li>
+        <li><label><input type="checkbox"> Los tests usan datos sintéticos, no una copia de producción</label></li>
+        <li><label><input type="checkbox"> Los tests corren automático en cada Pull Request</label></li>
+      </ul></div></div>
+
+      <div class="nav-chap">
+        <a href="#orquestacion"><svg class="ic"><use href="#i-a"/></svg> Orquestación</a>
+        <a href="#observabilidad" class="next">Observabilidad y logging <svg class="ic"><use href="#i-a"/></svg></a>
+      </div>
+    </section>
+
+<!-- ===== OBSERVABILIDAD Y LOGGING ===== -->
+<section id="observabilidad">
+      <div class="sec-hd"><div class="sec-n"><svg class="ic"><use href="#i-doc"/></svg></div>
+        <div><div class="sec-k">Confiabilidad y producción</div><h2 class="sec">📈 Observabilidad y logging</h2></div></div>
+      <p class="lead">Las alertas (<a href="#f5">Fase 5</a>) avisan cuando algo <strong>falla</strong>. La observabilidad te deja responder <strong>por qué</strong> falló, sin tener que reproducir el problema a ciegas.</p>
+
+      <div class="blk obj"><div class="h"><svg class="ic"><use href="#i-t"/></svg> Objetivo</div><div class="b">
+        <p>Que cualquier pipeline en producción pueda responder tres preguntas sin que vos tengas que investigar a mano: <strong>¿corrió?</strong>, <strong>¿cuánto tardó y procesó?</strong>, <strong>¿los datos están frescos?</strong></p></div></div>
+
+      <h3><span class="hn">01</span> Logging estructurado: logs que se pueden consultar, no solo leer</h3>
+      <p>Un <code>print()</code> sirve mientras mirás la pantalla. Un log estructurado (JSON, con campos fijos) se puede filtrar, agregar y graficar después.</p>
+      <figure class="code"><figcaption><span class="lg">python · logging estructurado</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="k">import</span> logging, json, time
+
+logger = logging.getLogger(<span class="s">"pipeline.silver_ventas"</span>)
+
+<span class="k">def</span> log_evento(**campos):
+    logger.info(json.dumps({<span class="s">"pipeline"</span>: <span class="s">"silver_ventas"</span>, <span class="s">"ts"</span>: time.time(), **campos}))
+
+inicio = time.time()
+filas_leidas = df_bronze.count()
+<span class="c"># ... transformar ...</span>
+filas_escritas = df_silver.count()
+
+log_evento(
+    evento=<span class="s">"fin_ejecucion"</span>,
+    filas_leidas=filas_leidas,
+    filas_escritas=filas_escritas,
+    filas_rechazadas=filas_leidas - filas_escritas,
+    duracion_seg=round(time.time() - inicio, 1),
+)
+<span class="c"># {"pipeline": "silver_ventas", "evento": "fin_ejecucion", "filas_leidas": 50000, ...}</span></pre></figure>
+      <div class="note o"><b>Un campo <code>pipeline</code> fijo en cada log</b>
+        Con ese campo, cualquier herramienta de logs (Databricks, CloudWatch, Log Analytics) te deja filtrar "todos los eventos de <code>silver_ventas</code> de la última semana" en una consulta, sin buscar texto a ciegas.</div>
+
+      <h3><span class="hn">02</span> Freshness: el dato existe, pero ¿está actualizado?</h3>
+      <p>Una tabla puede tener millones de filas correctas y aun así estar <strong>vieja</strong> — el pipeline dejó de correr hace tres días y nadie se dio cuenta porque no hubo ningún error.</p>
+      <figure class="code"><figcaption><span class="lg">sql · control de freshness</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="c">-- Alertar si la última carga tiene más de 26 horas (un margen sobre el SLA diario)</span>
+<span class="k">SELECT</span>
+  <span class="k">MAX</span>(_ingested_at) <span class="k">AS</span> ultima_carga,
+  <span class="k">TIMESTAMPDIFF</span>(HOUR, <span class="k">MAX</span>(_ingested_at), <span class="k">CURRENT_TIMESTAMP</span>()) <span class="k">AS</span> horas_desde_la_ultima_carga
+<span class="k">FROM</span> proyecto.gold.fact_ventas
+<span class="k">HAVING</span> horas_desde_la_ultima_carga > 26;  <span class="c">-- si devuelve una fila, disparar alerta</span></pre></figure>
+
+      <h3><span class="hn">03</span> Qué métricas exponer por pipeline</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Métrica</th><th>Qué responde</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Filas leídas / escritas / rechazadas</strong></td><td>¿El volumen es el esperado, o cayó/creció de forma anormal?</td></tr>
+          <tr><td><strong>Duración de la ejecución</strong></td><td>¿Se está degradando el rendimiento con el tiempo?</td></tr>
+          <tr><td><strong>Freshness (horas desde la última carga)</strong></td><td>¿El dato que ve el negocio está al día?</td></tr>
+          <tr><td><strong>Tasa de error de los controles de calidad</strong></td><td>¿La confiabilidad de los datos está mejorando o empeorando?</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note w"><b>SLA de datos: ponele un número</b>
+        "El dato tiene que estar fresco" no es un SLA. <strong>"El dato de ayer está disponible antes de las 7 AM"</strong> sí lo es — es medible, y es lo que le podés prometer al negocio con confianza.</div>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Buenas prácticas</div><div class="b">
+        <ul>
+          <li><strong>Un campo <code>pipeline</code> y <code>capa</code> fijos</strong> en cada log, para poder filtrar y agregar después.</li>
+          <li><strong>Loguear al principio y al final</strong> de cada ejecución, con conteos — no solo cuando algo falla.</li>
+          <li><strong>Definí el SLA de freshness por tabla</strong>, no un número genérico para todo el proyecto.</li>
+          <li><strong>Un dashboard de salud del pipeline</strong>, aparte del dashboard de negocio — que vos mires vos, no el negocio.</li>
+        </ul></div></div>
+
+      <div class="blk err"><div class="h"><svg class="ic"><use href="#i-w"/></svg> Errores comunes</div><div class="b">
+        <ul>
+          <li><strong>Solo loguear errores.</strong> Sin el "corrió bien, procesó 50.000 filas" no podés distinguir "no corrió" de "corrió pero nadie ve los logs".</li>
+          <li><strong>Logs en texto libre.</strong> Sin estructura, terminás usando <code>grep</code> a ciegas en vez de una consulta.</li>
+          <li><strong>Confundir "sin errores" con "está fresco".</strong> Un pipeline puede dejar de dispararse (por ejemplo, el orquestador se desactivó) sin generar ningún error.</li>
+        </ul></div></div>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Checklist · Observabilidad mínima</div><div class="b">
+      <ul class="ck" data-k="observabilidad">
+        <li><label><input type="checkbox"> Cada pipeline loguea filas leídas/escritas/rechazadas y duración</label></li>
+        <li><label><input type="checkbox"> Los logs son estructurados (JSON), no texto libre</label></li>
+        <li><label><input type="checkbox"> Cada tabla crítica tiene un SLA de freshness definido con un número</label></li>
+        <li><label><input type="checkbox"> Hay un control automático que avisa si se incumple el SLA</label></li>
+      </ul></div></div>
+
+      <div class="nav-chap">
+        <a href="#testing"><svg class="ic"><use href="#i-a"/></svg> Testing de pipelines</a>
+        <a href="#cicd" class="next">CI/CD para proyectos de datos <svg class="ic"><use href="#i-a"/></svg></a>
+      </div>
+    </section>
+
+<!-- ===== CI/CD ===== -->
+<section id="cicd">
+      <div class="sec-hd"><div class="sec-n"><svg class="ic"><use href="#i-dl"/></svg></div>
+        <div><div class="sec-k">Confiabilidad y producción</div><h2 class="sec">🔁 CI/CD para proyectos de datos</h2></div></div>
+      <p class="lead">Lo mismo que ya viste para <a href="#fabric">Fabric</a>, generalizado: cómo automatizar que el código se pruebe y se despliegue solo, en cualquier plataforma Git.</p>
+
+      <div class="blk obj"><div class="h"><svg class="ic"><use href="#i-t"/></svg> Objetivo</div><div class="b">
+        <p>Que un <code>push</code> o un Pull Request corra los tests automáticamente, y que un merge a <code>main</code> despliegue solo — sin pasos manuales que alguien se puede olvidar.</p></div></div>
+
+      <h3><span class="hn">01</span> El patrón que se repite en cualquier plataforma</h3>
+      <div class="mermaid">
+graph LR
+    A[git push] --> B[Pull Request]
+    B --> C[CI: corre tests<br/>y controles de calidad]
+    C -->|verde| D[Review + Merge a main]
+    C -->|rojo| A
+    D --> E[CD: despliega a<br/>staging automático]
+    E --> F[Validar]
+    F --> G[Promover a prod]
+      </div>
+      <p>El nombre del archivo y la sintaxis cambian según la plataforma (ver la tabla de equivalencias en <a href="#git">Git</a>), pero la secuencia <strong>CI prueba → review humano → CD despliega</strong> es siempre la misma.</p>
+
+      <h3><span class="hn">02</span> Ejemplo con GitHub Actions</h3>
+      <figure class="code"><figcaption><span class="lg">yaml · .github/workflows/ci.yml</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="k">name</span>: CI - Tests y calidad
+<span class="k">on</span>:
+  pull_request:
+    branches: [develop, main]
+
+<span class="k">jobs</span>:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - <span class="k">uses</span>: actions/checkout@v4
+
+      - <span class="k">name</span>: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - <span class="k">name</span>: Correr tests (§testing)
+        run: pytest tests/ -v
+
+      - <span class="k">name</span>: Lint del código SQL
+        run: sqlfluff lint models/
+
+      - <span class="k">name</span>: Bloquear el merge si algo falló
+        <span class="k">if</span>: failure()
+        run: exit 1</pre></figure>
+      <div class="note o"><b>Este workflow es el "portero" del repositorio</b>
+        Configurado como <em>required check</em> en la protección de la rama <code>main</code> (ver <a href="#git">Git</a> §06), GitHub no deja mergear un PR si este workflow no pasó en verde — el control queda en la herramienta, no en la memoria de quien revisa.</div>
+
+      <h3><span class="hn">03</span> Secretos y credenciales: nunca en el código</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Plataforma</th><th>Dónde van los secretos</th></tr></thead>
+        <tbody>
+          <tr><td>GitHub Actions</td><td><em>Settings → Secrets and variables → Actions</em>, se referencian como <code>${{ secrets.NOMBRE }}</code></td></tr>
+          <tr><td>GitLab CI/CD</td><td><em>Settings → CI/CD → Variables</em>, marcadas como <em>Protected</em> y <em>Masked</em></td></tr>
+          <tr><td>Azure Pipelines</td><td><em>Variable Groups</em>, opcionalmente vinculados a Azure Key Vault</td></tr>
+          <tr><td>Databricks Jobs</td><td><em>Secret scopes</em> (ver <a href="#databricks">Databricks</a>), nunca en el notebook</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note c"><b>La regla no cambia por estar en CI</b>
+        Es la misma regla de <a href="#git">Git</a> §"Errores comunes": si una credencial queda commiteada, se rota inmediatamente. El CI no es una excepción — es, de hecho, donde más credenciales de producción circulan.</div>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Buenas prácticas</div><div class="b">
+        <ul>
+          <li><strong>El CI corre en cada Pull Request</strong>, nunca solo "antes de un release grande".</li>
+          <li><strong>El deploy a producción requiere un merge aprobado</strong>, nunca un push directo a una rama de despliegue.</li>
+          <li><strong>Separá el pipeline de CI del de CD.</strong> Probar código y desplegarlo son responsabilidades distintas, aunque vivan en el mismo archivo.</li>
+          <li><strong>El mismo workflow sirve para staging y para prod</strong>, parametrizado por ambiente — no dupliques el archivo.</li>
+        </ul></div></div>
+
+      <div class="blk err"><div class="h"><svg class="ic"><use href="#i-w"/></svg> Errores comunes</div><div class="b">
+        <ul>
+          <li><strong>CI que tarda 40 minutos.</strong> Nadie espera eso antes de mergear — termina desactivado "temporalmente" y para siempre.</li>
+          <li><strong>Desplegar a mano "por esta vez".</strong> Rompe el único registro confiable de qué se desplegó y cuándo.</li>
+          <li><strong>Secretos de prod disponibles en el pipeline de una rama de feature.</strong> Restringí qué ramas pueden usar qué secretos.</li>
+        </ul></div></div>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Checklist · CI/CD mínimo viable</div><div class="b">
+      <ul class="ck" data-k="cicd">
+        <li><label><input type="checkbox"> Cada PR dispara tests automáticos antes de poder mergear</label></li>
+        <li><label><input type="checkbox"> La rama main está protegida y exige ese check en verde</label></li>
+        <li><label><input type="checkbox"> Ningún secreto vive en el código — todos están en el store de la plataforma</label></li>
+        <li><label><input type="checkbox"> El despliegue a producción es automático tras el merge, no manual</label></li>
+      </ul></div></div>
+
+      <div class="nav-chap">
+        <a href="#observabilidad"><svg class="ic"><use href="#i-a"/></svg> Observabilidad y logging</a>
+        <a href="#iac" class="next">Infraestructura como código <svg class="ic"><use href="#i-a"/></svg></a>
+      </div>
+    </section>
+
+<!-- ===== INFRAESTRUCTURA COMO CÓDIGO ===== -->
+<section id="iac">
+      <div class="sec-hd"><div class="sec-n"><svg class="ic"><use href="#i-tp"/></svg></div>
+        <div><div class="sec-k">Confiabilidad y producción</div><h2 class="sec">🧱 Infraestructura como código (Terraform)</h2></div></div>
+      <p class="lead">Crear un bucket, un catálogo o un dataset a mano en la consola funciona una vez. La segunda vez que hay que recrearlo igual en otro ambiente, ya deberías tenerlo en código.</p>
+
+      <div class="blk obj"><div class="h"><svg class="ic"><use href="#i-t"/></svg> Objetivo</div><div class="b">
+        <p>Definir la infraestructura del proyecto (almacenamiento, catálogos, permisos) en archivos versionados en Git, que se aplican igual en dev, staging y prod.</p></div></div>
+
+      <h3><span class="hn">01</span> Qué es y por qué en un proyecto de datos</h3>
+      <p><strong>Terraform</strong> es una herramienta de <em>Infraestructura como Código</em>: en vez de crear recursos con clics en una consola, los describís en archivos <code>.tf</code> declarativos, y una herramienta calcula qué crear, cambiar o borrar para llegar a ese estado.</p>
+      <div class="lanes">
+        <div class="lane"><div class="lb">1</div><div class="lc"><b><code>terraform init</code></b><small>Descarga los plugins del proveedor (AWS, GCP, Azure, Databricks…)</small></div></div>
+        <div class="lane"><div class="lb">2</div><div class="lc"><b><code>terraform plan</code></b><small>Muestra qué va a crear/cambiar/borrar, <strong>antes</strong> de tocar nada — el equivalente al <code>git diff</code> de la infraestructura</small></div></div>
+        <div class="lane"><div class="lb">3</div><div class="lc"><b><code>terraform apply</code></b><small>Ejecuta esos cambios, y guarda el estado resultante</small></div></div>
+      </div>
+      <div class="note i"><b>Por qué no alcanza con crearlo a mano una vez</b>
+        Sin código, nadie puede responder con certeza "¿cómo estaba configurado el ambiente de prod?" seis meses después. Con Terraform, la respuesta es: lo que dice el repositorio en <code>main</code>.</div>
+
+      <h3><span class="hn">02</span> Ejemplo: el almacenamiento de un proyecto, versionado</h3>
+      <figure class="code"><figcaption><span class="lg">terraform · main.tf</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="k">resource</span> <span class="s">"aws_s3_bucket"</span> <span class="s">"bronze"</span> {
+  bucket = <span class="s">"${var.proyecto}-${var.ambiente}-bronze"</span>
+
+  tags = {
+    Proyecto = var.proyecto
+    Ambiente = var.ambiente
+    GestionadoPor = <span class="s">"terraform"</span>
+  }
+}
+
+<span class="k">resource</span> <span class="s">"databricks_catalog"</span> <span class="s">"principal"</span> {
+  name    = <span class="s">"${var.proyecto}_${var.ambiente}"</span>
+  comment = <span class="s">"Catalogo del proyecto, gestionado por Terraform"</span>
+}
+
+<span class="k">resource</span> <span class="s">"databricks_schema"</span> <span class="s">"capas"</span> {
+  <span class="k">for_each</span>     = toset([<span class="s">"bronze"</span>, <span class="s">"silver"</span>, <span class="s">"gold"</span>])
+  catalog_name = databricks_catalog.principal.name
+  name         = each.value
+}</pre></figure>
+
+      <h3><span class="hn">03</span> Un ambiente, tres archivos de variables</h3>
+      <p>El mismo <code>main.tf</code> sirve para dev, staging y prod — lo único que cambia es el archivo de variables que le pasás al aplicar:</p>
+      <figure class="code"><figcaption><span class="lg">bash · aplicar por ambiente</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="c"># environments/dev.tfvars     → proyecto = "ventas", ambiente = "dev"</span>
+<span class="c"># environments/prod.tfvars    → proyecto = "ventas", ambiente = "prod"</span>
+
+terraform plan  -var-file=environments/dev.tfvars
+terraform apply -var-file=environments/prod.tfvars</pre></figure>
+      <div class="note w"><b>El estado de Terraform también es sensible</b>
+        El archivo de <em>state</em> puede contener valores sensibles (IDs, a veces credenciales). Guardalo en un backend remoto (S3+DynamoDB, Azure Storage, Terraform Cloud) con acceso restringido — nunca commiteado en texto plano al repo.</div>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Buenas prácticas</div><div class="b">
+        <ul>
+          <li><strong>Empezá solo cuando lo necesites</strong> (ver <a href="#organizacion">Organización de proyectos</a>) — un proyecto chico con dos buckets creados una vez no siempre lo justifica.</li>
+          <li><strong><code>terraform plan</code> siempre antes de <code>apply</code></strong>, y revisado como un PR más.</li>
+          <li><strong>Backend remoto para el state</strong>, con locking, para que dos personas no lo apliquen a la vez.</li>
+          <li><strong>Una carpeta de variables por ambiente</strong>, nunca hardcodear el nombre del ambiente dentro del recurso.</li>
+        </ul></div></div>
+
+      <div class="blk err"><div class="h"><svg class="ic"><use href="#i-w"/></svg> Errores comunes</div><div class="b">
+        <ul>
+          <li><strong><code>terraform apply</code> sin mirar el <code>plan</code>.</strong> Es la forma más común de borrar algo por error de forma irreversible.</li>
+          <li><strong>State local, en la laptop de una sola persona.</strong> Si esa persona no está, nadie puede aplicar cambios con seguridad.</li>
+          <li><strong>Mezclar recursos creados a mano con recursos de Terraform.</strong> Terraform los va a querer "corregir" o borrar en el próximo <code>apply</code>.</li>
+        </ul></div></div>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Checklist · IaC mínimo viable</div><div class="b">
+      <ul class="ck" data-k="iac">
+        <li><label><input type="checkbox"> El estado de Terraform vive en un backend remoto, no en una laptop</label></li>
+        <li><label><input type="checkbox"> Hay un archivo de variables por ambiente (dev/staging/prod)</label></li>
+        <li><label><input type="checkbox"> Los cambios de infraestructura pasan por PR, como el código</label></li>
+        <li><label><input type="checkbox"> Nadie crea recursos a mano en un ambiente gestionado por Terraform</label></li>
+      </ul></div></div>
+
+      <div class="nav-chap">
+        <a href="#cicd"><svg class="ic"><use href="#i-a"/></svg> CI/CD</a>
+        <a href="#seguridad" class="next">Seguridad y gobierno de datos <svg class="ic"><use href="#i-a"/></svg></a>
+      </div>
+    </section>
+
+<!-- ===== SEGURIDAD Y GOBIERNO DE DATOS ===== -->
+<section id="seguridad">
+      <div class="sec-hd"><div class="sec-n"><svg class="ic"><use href="#i-s"/></svg></div>
+        <div><div class="sec-k">Confiabilidad y producción</div><h2 class="sec">🔐 Seguridad y gobierno de datos</h2></div></div>
+      <p class="lead">Cuatro controles que aplican sin importar la plataforma — cambia el nombre de la herramienta, no la responsabilidad.</p>
+
+      <div class="blk obj"><div class="h"><svg class="ic"><use href="#i-t"/></svg> Objetivo</div><div class="b">
+        <p>Que solo quien debería ver un dato pueda verlo, que ninguna credencial viva en texto plano, y que los datos sensibles estén identificados antes de que alguien los use mal sin querer.</p></div></div>
+
+      <h3><span class="hn">01</span> Los 4 controles mínimos, por plataforma</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Control</th><th>Databricks</th><th>GCP</th><th>AWS</th><th>Fabric</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Control de acceso</strong></td><td>Unity Catalog (GRANT)</td><td>IAM + BigQuery ACLs</td><td>IAM + Lake Formation</td><td>Roles de workspace + RLS</td></tr>
+          <tr><td><strong>Gestión de secretos</strong></td><td>Secret scopes</td><td>Secret Manager</td><td>Secrets Manager</td><td>Connections + Key Vault</td></tr>
+          <tr><td><strong>Catálogo y linaje</strong></td><td>Unity Catalog</td><td>Data Catalog / Dataplex</td><td>Glue Data Catalog</td><td>Microsoft Purview</td></tr>
+          <tr><td><strong>Encriptación</strong></td><td>En reposo y tránsito, por defecto</td><td>En reposo y tránsito, por defecto</td><td>En reposo y tránsito, por defecto</td><td>En reposo y tránsito, por defecto</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note o"><b>El patrón que se repite</b>
+        En las cuatro plataformas el orden es el mismo: 1) nadie tiene acceso por defecto, 2) se otorga por rol o grupo (nunca a una persona suelta), 3) las credenciales viven en un servicio dedicado, nunca en el código.</div>
+
+      <h3><span class="hn">02</span> Secretos: nunca en el código, nunca en el chat</h3>
+      <figure class="code"><figcaption><span class="lg">python · leer un secreto, nunca hardcodearlo</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="c"># MAL: la credencial queda en el código, en el historial de Git para siempre</span>
+api_key = <span class="s">"sk-abc123..."</span>
+
+<span class="c"># BIEN: se lee del gestor de secretos de la plataforma en tiempo de ejecucion</span>
+api_key = dbutils.secrets.get(scope=<span class="s">"proyecto-ventas"</span>, key=<span class="s">"api_key_ecommerce"</span>)</pre></figure>
+      <div class="note c"><b>Si ya se commiteó una credencial, no alcanza con borrarla</b>
+        Ya quedó expuesta en el historial. El único paso que importa es <strong>rotarla de inmediato</strong> (generar una nueva y desactivar la vieja) — ver también <a href="#git">Git</a> §"Errores comunes".</div>
+
+      <h3><span class="hn">03</span> Clasificar y proteger datos sensibles (PII)</h3>
+      <p>Antes de decidir cómo proteger un dato, hay que saber cuáles son sensibles. No todas las columnas necesitan el mismo nivel de control.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Clasificación</th><th>Ejemplo</th><th>Tratamiento típico</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Público</strong></td><td>Nombre de producto, categoría</td><td>Sin restricción</td></tr>
+          <tr><td><strong>Interno</strong></td><td>Monto de venta, margen</td><td>Acceso por rol, sin exponer fuera de la empresa</td></tr>
+          <tr><td><strong>Confidencial / PII</strong></td><td>Email, teléfono, documento de identidad</td><td>Enmascarado o encriptado a nivel de columna; acceso mínimo necesario</td></tr>
+        </tbody>
+      </table></div>
+      <figure class="code"><figcaption><span class="lg">sql · enmascarar una columna sensible</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="c">-- Ejemplo de mascara a nivel de columna (sintaxis de Unity Catalog / Databricks)</span>
+<span class="k">CREATE OR REPLACE FUNCTION</span> enmascarar_email(email STRING)
+<span class="k">RETURN</span> <span class="k">CASE</span>
+  <span class="k">WHEN</span> is_member(<span class="s">'equipo_soporte'</span>) <span class="k">THEN</span> email
+  <span class="k">ELSE</span> concat(<span class="s">'***@'</span>, split(email, <span class="s">'@'</span>)[1])
+<span class="k">END</span>;
+
+<span class="k">ALTER TABLE</span> gold.dim_cliente <span class="k">ALTER COLUMN</span> email <span class="k">SET MASK</span> enmascarar_email;</pre></figure>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Buenas prácticas</div><div class="b">
+        <ul>
+          <li><strong>Acceso por grupo, nunca por persona.</strong> Cuando alguien cambia de equipo, sacás el grupo y listo — no hay que rastrear permisos sueltos.</li>
+          <li><strong>Principio de mínimo privilegio:</strong> acceso de lectura por defecto; escritura solo donde se justifica.</li>
+          <li><strong>Clasificá las columnas sensibles en el diseño</strong> (§f2, modelado), no como parche después de un incidente.</li>
+          <li><strong>Auditá accesos periódicamente:</strong> ¿sigue teniendo sentido que ese grupo tenga ese permiso?</li>
+        </ul></div></div>
+
+      <div class="blk err"><div class="h"><svg class="ic"><use href="#i-w"/></svg> Errores comunes</div><div class="b">
+        <ul>
+          <li><strong>Compartir una credencial de servicio por chat o email.</strong> Usá el gestor de secretos, incluso para compartirla una sola vez.</li>
+          <li><strong>Dar acceso de administrador "para que no moleste".</strong> Es la forma más común en que un permiso amplio queda olvidado meses después.</li>
+          <li><strong>Construir el modelo semántico o el dashboard sobre datos sin clasificar.</strong> El negocio termina viendo columnas que no debería.</li>
+        </ul></div></div>
+
+      <div class="blk bp"><div class="h"><svg class="ic"><use href="#i-ck"/></svg> Checklist · Seguridad mínima viable</div><div class="b">
+      <ul class="ck" data-k="seguridad">
+        <li><label><input type="checkbox"> Los accesos se otorgan por grupo, no por persona</label></li>
+        <li><label><input type="checkbox"> Ninguna credencial vive en código, notebooks o chats</label></li>
+        <li><label><input type="checkbox"> Las columnas con PII están identificadas y enmascaradas o restringidas</label></li>
+        <li><label><input type="checkbox"> Hay un catálogo (Unity Catalog / Purview / Glue / Data Catalog) activo, no solo instalado</label></li>
+      </ul></div></div>
+
+      <div class="nav-chap">
+        <a href="#iac"><svg class="ic"><use href="#i-a"/></svg> Infraestructura como código</a>
         <a href="#databricks" class="next">Databricks <svg class="ic"><use href="#i-a"/></svg></a>
       </div>
     </section>
@@ -3795,7 +4246,7 @@ default_args = {
       </div></div>
 
       <div class="nav-chap">
-        <a href="#f5"><svg class="ic"><use href="#i-a"/></svg> Orquestar y desplegar</a>
+        <a href="#seguridad"><svg class="ic"><use href="#i-a"/></svg> Seguridad y gobierno de datos</a>
         <a href="#sdk-db" class="next">SDK de Databricks <svg class="ic"><use href="#i-a"/></svg></a>
       </div>
     </section>
@@ -4227,7 +4678,72 @@ graph TD
         idempotencia y el patrón de 4 pasos de Silver <strong>aplica igual</strong>. Cambia dónde corre y cómo se
         conecta a Power BI; no cambia cómo pensás el pipeline.</div>
 
-      <h3><span class="hn">02</span> Arquitectura Medallion en un Lakehouse</h3>
+      <h3><span class="hn">02</span> 🗺️ El mapa completo: de la fuente al reporte, de un vistazo</h3>
+      <p>Antes de entrar al detalle de cada paso, así se ve el recorrido entero. Son <strong>6 pasos</strong>, todos dentro del mismo workspace de Fabric — sin mover el dato a otra plataforma en ningún punto:</p>
+
+      <figure class="hero-banner" aria-hidden="true">
+        <svg viewBox="0 0 950 220" xmlns="http://www.w3.org/2000/svg" role="img">
+          <defs>
+            <linearGradient id="hgSrc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b6b7a"/><stop offset="1" stop-color="#8fa2b3"/></linearGradient>
+            <linearGradient id="hgDF" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f5c8c"/><stop offset="1" stop-color="#3d94c7"/></linearGradient>
+            <linearGradient id="hgLake" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#146c5b"/><stop offset="1" stop-color="#2ea88e"/></linearGradient>
+            <linearGradient id="hgSem" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a3a91"/><stop offset="1" stop-color="#8a63c4"/></linearGradient>
+            <linearGradient id="hgPBI" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c98a0c"/><stop offset="1" stop-color="#f0c754"/></linearGradient>
+          </defs>
+          <path d="M95 110 H 855" stroke="var(--border)" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round"/>
+          <g transform="translate(20,40)">
+            <rect width="150" height="140" rx="16" fill="url(#hgSrc)"/>
+            <text x="75" y="50" text-anchor="middle" font-size="30">📡</text>
+            <text x="75" y="83" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff" font-family="var(--display)">Fuente</text>
+            <text x="75" y="103" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">ERP · CRM</text>
+            <text x="75" y="117" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">API · archivos</text>
+          </g>
+          <g transform="translate(205,40)">
+            <rect width="150" height="140" rx="16" fill="url(#hgDF)"/>
+            <text x="75" y="50" text-anchor="middle" font-size="30">🔀</text>
+            <text x="75" y="83" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff" font-family="var(--display)">Data Factory</text>
+            <text x="75" y="103" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">Copy Data /</text>
+            <text x="75" y="117" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">Copy job</text>
+          </g>
+          <g transform="translate(390,40)">
+            <rect width="150" height="140" rx="16" fill="url(#hgLake)"/>
+            <text x="75" y="50" text-anchor="middle" font-size="30">🧱</text>
+            <text x="75" y="83" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff" font-family="var(--display)">Lakehouse</text>
+            <text x="75" y="103" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">Bronze → Silver</text>
+            <text x="75" y="117" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">→ Gold (Notebooks)</text>
+          </g>
+          <g transform="translate(575,40)">
+            <rect width="150" height="140" rx="16" fill="url(#hgSem)"/>
+            <text x="75" y="50" text-anchor="middle" font-size="30">🔗</text>
+            <text x="75" y="83" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff" font-family="var(--display)">Semantic Model</text>
+            <text x="75" y="103" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">Direct Lake</text>
+            <text x="75" y="117" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">(relaciones, DAX)</text>
+          </g>
+          <g transform="translate(760,40)">
+            <rect width="150" height="140" rx="16" fill="url(#hgPBI)"/>
+            <text x="75" y="50" text-anchor="middle" font-size="30">📊</text>
+            <text x="75" y="83" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff" font-family="var(--display)">Power BI</text>
+            <text x="75" y="103" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">Reporte</text>
+            <text x="75" y="117" text-anchor="middle" font-size="10.5" fill="#ffffffcc" font-family="var(--sans)">publicado</text>
+          </g>
+          <text x="187" y="118" text-anchor="middle" font-size="22" fill="var(--faint)">➜</text>
+          <text x="372" y="118" text-anchor="middle" font-size="22" fill="var(--faint)">➜</text>
+          <text x="557" y="118" text-anchor="middle" font-size="22" fill="var(--faint)">➜</text>
+          <text x="742" y="118" text-anchor="middle" font-size="22" fill="var(--faint)">➜</text>
+        </svg>
+        <figcaption>🌐 Todo vive en OneLake — nada se copia entre pasos</figcaption>
+      </figure>
+
+      <div class="lanes">
+        <div class="lane"><div class="lb">1</div><div class="lc"><b>Workspace + Lakehouse</b><small>Creás el contenedor y el almacenamiento (§03-§04)</small></div></div>
+        <div class="lane"><div class="lb">2</div><div class="lc"><b>Ingesta</b><small>Data Factory copia la fuente a Bronze (§05)</small></div></div>
+        <div class="lane"><div class="lb">3</div><div class="lc"><b>Transformar</b><small>Notebooks: Bronze → Silver → Gold (§06)</small></div></div>
+        <div class="lane"><div class="lb">4</div><div class="lc"><b>Compactar</b><small><code>OPTIMIZE</code> antes de publicar (§07)</small></div></div>
+        <div class="lane"><div class="lb">5</div><div class="lc"><b>Modelo semántico</b><small>Relaciones y medidas en Direct Lake (§08)</small></div></div>
+        <div class="lane"><div class="lb">6</div><div class="lc"><b>Reporte</b><small>Visuales, publicar y compartir (§09)</small></div></div>
+      </div>
+
+      <h3><span class="hn">03</span> Arquitectura Medallion en un Lakehouse</h3>
       <div class="mermaid">
 graph LR
     A[Fuente<br/>ERP / CRM / API] --> B[Data Factory<br/>Pipeline de copia]
@@ -4242,9 +4758,30 @@ graph LR
         (o schemas dentro de uno solo) y las tablas quedan disponibles automáticamente tanto para Spark como para
         el endpoint SQL de solo lectura que Fabric genera solo.</p>
 
-      <h3><span class="hn">03</span> Ingesta con Data Factory (pipelines)</h3>
-      <p>El pipeline se arma visualmente (actividad <strong>Copy Data</strong>), pero la lógica es la misma que
-        cualquier orquestador: origen, destino, y qué hacer si falla.</p>
+      <h3><span class="hn">04</span> 🏢 Paso 1 · Crear el workspace y el Lakehouse</h3>
+      <p>Todo en Fabric vive dentro de un <strong>workspace</strong> — la unidad de organización que agrupa permisos, capacidad y todos los ítems del proyecto (Lakehouse, notebooks, pipelines, reportes).</p>
+      <div class="lanes">
+        <div class="lane"><div class="lb">1</div><div class="lc"><b>Crear el workspace</b><small><a href="https://app.fabric.microsoft.com">app.fabric.microsoft.com</a> → <em>Workspaces</em> → <em>New workspace</em>. Asignale una capacidad — la de prueba gratuita se llama <strong>Fabric trial (F2)</strong>, alcanza para practicar.</small></div></div>
+        <div class="lane"><div class="lb">2</div><div class="lc"><b>Crear el Lakehouse</b><small>Dentro del workspace: <em>+ New item</em> → <em>Lakehouse</em>. Ponele nombre (ej. <code>lh_ventas</code>) — Fabric crea automáticamente las carpetas <code>Tables/</code> y <code>Files/</code> sobre OneLake.</small></div></div>
+        <div class="lane"><div class="lb">3</div><div class="lc"><b>Explorar el Lakehouse</b><small>El explorador muestra <strong>Tables</strong> (Delta, con schema) y <strong>Files</strong> (crudo sin procesar) lado a lado — es tu Bronze antes de tener esquema definido.</small></div></div>
+      </div>
+      <div class="note i"><b>Un Lakehouse, varias capas — o uno por capa</b>
+        Las dos formas de organizar bronze/silver/gold son válidas: <strong>un solo Lakehouse con schemas</strong> (<code>bronze.ventas</code>, <code>silver.ventas</code>) es más simple para empezar; <strong>un Lakehouse por capa</strong> (<code>lh_bronze</code>, <code>lh_silver</code>, <code>lh_gold</code>) da más control de permisos cuando el equipo crece. Elegí uno y sé consistente — ver <a href="#organizacion">Organización de proyectos</a>.</div>
+
+      <h3><span class="hn">05</span> 📥 Paso 2 · Ingesta con Data Factory</h3>
+      <p>Fabric ofrece dos formas de traer datos a Bronze. Para el primer pipeline, usá el asistente visual — no hace falta escribir JSON a mano, aunque por debajo genera exactamente eso.</p>
+
+      <h4>Opción A · Copy Data assistant (recomendado para empezar)</h4>
+      <div class="lanes">
+        <div class="lane"><div class="lb">1</div><div class="lc"><b>Nuevo pipeline</b><small>Workspace → <em>+ New item</em> → <em>Data pipeline</em>, ponele nombre (ej. <code>pl_ingesta_ventas</code>)</small></div></div>
+        <div class="lane"><div class="lb">2</div><div class="lc"><b>Copy Data assistant</b><small>En el lienzo, elegí <em>Copy data assistant</em> — abre el asistente paso a paso</small></div></div>
+        <div class="lane"><div class="lb">3</div><div class="lc"><b>Elegir la fuente</b><small>Seleccioná el conector (SQL Server, REST API, SFTP, Blob Storage, datos de ejemplo…) y las credenciales de conexión</small></div></div>
+        <div class="lane"><div class="lb">4</div><div class="lc"><b>Previsualizar</b><small>El asistente muestra una vista previa de las columnas detectadas antes de continuar</small></div></div>
+        <div class="lane"><div class="lb">5</div><div class="lc"><b>Elegir destino: Lakehouse</b><small>Seleccioná tu Lakehouse, y <em>Load to new table</em> con el nombre de la tabla Bronze (ej. <code>ventas_raw</code>)</small></div></div>
+        <div class="lane"><div class="lb">6</div><div class="lc"><b>Mapear columnas</b><small>El asistente sugiere el mapeo automático — revisalo antes de continuar</small></div></div>
+        <div class="lane"><div class="lb">7</div><div class="lc"><b>Guardar y ejecutar</b><small><em>Save</em> → <em>Run</em>. Podés ver el progreso en tiempo real y el historial de ejecuciones</small></div></div>
+      </div>
+      <p>Por debajo, el asistente generó una actividad <strong>Copy</strong> como esta — entenderla te sirve para editarla a mano después:</p>
       <figure class="code"><figcaption><span class="lg">fabric · data factory · copy activity (json)</span><button class="cp">Copiar</button></figcaption>
 <pre>{
   <span class="s">"name"</span>: <span class="s">"Copy_Ventas_a_Bronze"</span>,
@@ -4256,12 +4793,17 @@ graph LR
   },
   <span class="s">"policy"</span>: { <span class="s">"retry"</span>: 2, <span class="s">"retryIntervalInSeconds"</span>: 30 }  <span class="c">// reintentos, como en cualquier DAG</span>
 }</pre></figure>
-      <div class="note o"><b>Dataflow Gen2 vs. Data Factory Pipeline</b>
-        Usá un <strong>Pipeline</strong> para orquestar (mover datos, disparar notebooks, definir dependencias).
+
+      <h4>Opción B · Copy job (para cargas simples y recurrentes)</h4>
+      <p>Más nuevo y más simple que un pipeline completo cuando la tarea es <em>solo</em> copiar datos de un origen a Bronze, sin pasos adicionales: <em>+ New item</em> → <em>Copy job</em>, elegís origen y destino, y programás la frecuencia. Para orquestar varios pasos (copiar → transformar → notificar) seguís necesitando un <strong>Pipeline</strong>.</p>
+
+      <div class="note o"><b>Dataflow Gen2 vs. Data Factory Pipeline vs. Copy job</b>
+        Usá un <strong>Pipeline</strong> para orquestar (mover datos, disparar notebooks, definir dependencias entre pasos).
+        Usá un <strong>Copy job</strong> cuando el único paso es copiar datos de una fuente, con menos configuración que un pipeline.
         Usá un <strong>Dataflow Gen2</strong> (interfaz de Power Query) cuando quien transforma no escribe SQL —
         genera el mismo resultado en OneLake, pero con una interfaz de "arrastrar y soltar".</div>
 
-      <h3><span class="hn">04</span> Transformar con Notebooks (el mismo Spark que ya conocés)</h3>
+      <h3><span class="hn">06</span> 🧽 Paso 3 · Transformar con Notebooks (el mismo Spark que ya conocés)</h3>
       <p>El notebook de Fabric corre Spark sobre OneLake. La sintaxis es la que ya usás en Databricks — el mismo
         patrón de 4 pasos de Silver, el mismo <code>MERGE</code>:</p>
       <figure class="code"><figcaption><span class="lg">fabric · notebook · pyspark + spark sql</span><button class="cp">Copiar</button></figcaption>
@@ -4281,8 +4823,48 @@ graph LR
 <span class="k">ON</span> dest.id_venta = orig.id_venta
 <span class="k">WHEN MATCHED THEN UPDATE SET</span> *
 <span class="k">WHEN NOT MATCHED THEN INSERT</span> *;</pre></figure>
+      <p>Repetís el mismo patrón (crear tabla → <code>MERGE</code>) para pasar de Silver a Gold, aplicando el modelo dimensional de la sección <a href="#f2">Modelar la capa Gold</a>: tablas de hechos y dimensiones, listas para que el modelo semántico las consuma.</p>
 
-      <h3><span class="hn">05</span> Direct Lake: por qué Power BI no importa ni hace DirectQuery</h3>
+      <h3><span class="hn">07</span> 🗜️ Paso 4 · Compactar antes de publicar</h3>
+      <p>Cada <code>MERGE</code> incremental deja detrás archivos Parquet chicos. Muchos archivos chicos son el enemigo silencioso de Direct Lake: si una tabla Gold queda fragmentada, Power BI la degrada a DirectQuery sin avisar y el reporte se siente lento sin causa aparente.</p>
+      <figure class="code"><figcaption><span class="lg">fabric · notebook · compactar antes de publicar</span><button class="cp">Copiar</button></figcaption>
+<pre><span class="c">-- Compacta los archivos chicos de la tabla Gold en archivos grandes y eficientes</span>
+<span class="k">OPTIMIZE</span> gold.fact_ventas;
+
+<span class="c">-- Si consultás por columnas específicas seguido, ordená los datos por esa columna</span>
+<span class="k">OPTIMIZE</span> gold.fact_ventas <span class="k">ZORDER BY</span> (fecha_venta);
+
+<span class="c">-- Elimina archivos viejos que ya no usa ninguna versión activa de la tabla</span>
+<span class="k">VACUUM</span> gold.fact_ventas <span class="k">RETAIN</span> 168 <span class="k">HOURS</span>;  <span class="c">-- 7 días, el mínimo seguro por defecto</span></pre></figure>
+      <div class="note w"><b>Corré esto como el último paso del pipeline, siempre</b>
+        Agregá el <code>OPTIMIZE</code> como celda final del notebook de Gold (o como paso propio del pipeline, después del <code>MERGE</code>). No es una tarea de mantenimiento ocasional: es parte del contrato de rendimiento con Direct Lake.</div>
+
+      <h3><span class="hn">08</span> 🔗 Paso 5 · Crear el modelo semántico en Direct Lake</h3>
+      <p>Este es el paso que conecta el Lakehouse con Power BI — y el que más cambió recientemente: <strong>desde septiembre de 2025, Fabric ya no crea un modelo semántico automático</strong> al crear el Lakehouse. Hay que crearlo a propósito.</p>
+      <div class="lanes">
+        <div class="lane"><div class="lb">1</div><div class="lc"><b>Abrir el Lakehouse</b><small>Entrá al Lakehouse Gold desde el workspace</small></div></div>
+        <div class="lane"><div class="lb">2</div><div class="lc"><b>New Power BI semantic model</b><small>Desde la cinta de opciones del Lakehouse, elegí <em>New Power BI semantic model</em></small></div></div>
+        <div class="lane"><div class="lb">3</div><div class="lc"><b>Elegir las tablas Gold</b><small>Seleccioná solo las tablas de hechos y dimensiones que el negocio va a consultar — no todo el Lakehouse</small></div></div>
+        <div class="lane"><div class="lb">4</div><div class="lc"><b>Definir relaciones</b><small>En la vista de modelo, conectá cada dimensión a la tabla de hechos por su clave (igual que en Power BI Desktop)</small></div></div>
+        <div class="lane"><div class="lb">5</div><div class="lc"><b>Marcar la tabla de fechas</b><small><em>Mark as date table</em> sobre <code>dim_fecha</code> — habilita las funciones de time intelligence en DAX</small></div></div>
+        <div class="lane"><div class="lb">6</div><div class="lc"><b>Crear medidas DAX</b><small>Las medidas base (sumas, promedios) se escriben acá mismo, en el modelo — no en el reporte</small></div></div>
+      </div>
+      <div class="note i"><b>Por qué este modelo queda en modo Direct Lake automáticamente</b>
+        Al crearse desde un Lakehouse, el modelo semántico apunta directo a los archivos Delta de OneLake — no hay nada que configurar para "activar" Direct Lake, es el modo por defecto de este flujo. Ver el detalle en <a href="#claude">§10</a> más abajo.</div>
+
+      <h3><span class="hn">09</span> 📊 Paso 6 · Construir el reporte de Power BI</h3>
+      <div class="lanes">
+        <div class="lane"><div class="lb">1</div><div class="lc"><b>Nuevo reporte</b><small>Desde el modelo semántico: <em>New report</em> — abre el editor de Power BI directo en el navegador</small></div></div>
+        <div class="lane"><div class="lb">2</div><div class="lc"><b>Elegir visuales</b><small>Arrastrá campos del panel a tarjetas, gráficos de barras/líneas y tablas — el panel de campos muestra las tablas del modelo, no del Lakehouse</small></div></div>
+        <div class="lane"><div class="lb">3</div><div class="lc"><b>Agregar segmentadores</b><small>Filtros por fecha, canal o región para que el negocio explore sin pedirte cambios</small></div></div>
+        <div class="lane"><div class="lb">4</div><div class="lc"><b>Verificar en Performance Analyzer</b><small>Panel <em>View</em> → <em>Performance analyzer</em>: si un visual muestra tiempos altos de "Direct Lake", revisá el paso 07 (compactación)</small></div></div>
+        <div class="lane"><div class="lb">5</div><div class="lc"><b>Publicar</b><small><em>File</em> → <em>Save</em> — el reporte queda publicado en el mismo workspace, no hace falta un paso de "deploy" separado</small></div></div>
+        <div class="lane"><div class="lb">6</div><div class="lc"><b>Compartir</b><small>Botón <em>Share</em>, o agregá el reporte a una <em>App</em> del workspace para distribuirlo prolijo al negocio</small></div></div>
+      </div>
+      <div class="note o"><b>También podés seguir usando Power BI Desktop</b>
+        Si preferís diseñar en Desktop: <em>Obtener datos</em> → <em>Power BI semantic models</em> → elegís el modelo Direct Lake del Lakehouse, y trabajás con conexión en vivo — el reporte se publica de vuelta al mismo workspace.</div>
+
+      <h3><span class="hn">10</span> Direct Lake: por qué Power BI no importa ni hace DirectQuery</h3>
       <div class="tw"><table>
         <thead><tr><th>Modo de Power BI</th><th>Cómo lee los datos</th><th>Costo de actualizarse</th></tr></thead>
         <tbody>
@@ -4296,7 +4878,7 @@ graph LR
         Power BI cae automáticamente a DirectQuery para esa consulta. Por eso <strong>correr <code>OPTIMIZE</code>
         sobre las tablas Gold</strong> (compactar archivos chicos) no es opcional: sostiene el rendimiento de Direct Lake.</div>
 
-      <h3><span class="hn">06</span> Idempotencia: se resuelve exactamente igual</h3>
+      <h3><span class="hn">11</span> Idempotencia: se resuelve exactamente igual</h3>
       <p>Como el Lakehouse guarda Delta Lake, la sección de <a href="#cargas">Estrategias de carga</a> aplica sin
         traducir nada: <code>INSERT INTO</code> sigue sin ser idempotente, <code>MERGE</code> sigue siendo la forma
         profesional de cargar incremental, y la prueba sigue siendo la misma — corré el notebook dos veces y
@@ -4308,6 +4890,8 @@ graph LR
           <li><strong>Compactá con <code>OPTIMIZE</code> las tablas Gold</strong> antes de publicar en Power BI: sostiene los guardrails de Direct Lake.</li>
           <li><strong>Usá Notebooks para lógica compleja</strong> y Dataflow Gen2 solo para transformaciones simples que un analista mantiene.</li>
           <li><strong>Aplicá el mismo patrón de 4 pasos</strong> (tipar, estandarizar, validar, deduplicar) que en cualquier otra plataforma: la limpieza no cambia por cambiar de herramienta.</li>
+          <li><strong>Creá el modelo semántico a propósito</strong> desde el Lakehouse Gold — desde sep. 2025 ya no se genera solo, y sin él no hay Direct Lake.</li>
+          <li><strong>Exponé solo las tablas Gold</strong> al modelo semántico, nunca Bronze/Silver — el negocio no debería ver datos sin validar.</li>
           <li><strong>Goberná con Microsoft Purview</strong> (el Unity Catalog de Fabric) desde el día uno, no después.</li>
         </ul></div></div>
 
@@ -4317,7 +4901,92 @@ graph LR
           <li><strong>Mezclar Dataflow Gen2 con lógica de negocio compleja.</strong> Es para transformaciones simples; lo demás va en Notebooks.</li>
           <li><strong>Copiar el hábito de Databricks de un catálogo por proyecto sin adaptarlo:</strong> en Fabric la unidad es el Workspace + Lakehouse; planificá la organización antes de crear diez lakehouses sueltos.</li>
           <li><strong>Ignorar la capacidad (SKU) contratada.</strong> Fabric cobra por capacidad reservada (unidades F): un job pesado corriendo sin control satura la capacidad de todo el workspace, no solo la suya.</li>
+          <li><strong>Asumir que el modelo semántico se creó solo.</strong> Desde sep. 2025 hay que crearlo a propósito desde el Lakehouse (§08) — si el reporte no encuentra tablas, es la causa más probable.</li>
+          <li><strong>Construir el modelo semántico sobre Bronze o Silver.</strong> El negocio termina viendo duplicados y datos sin limpiar; el modelo se arma siempre sobre Gold.</li>
+          <li><strong>No revisar Performance Analyzer.</strong> Un visual lento en Direct Lake casi siempre es un síntoma de tablas fragmentadas (§07), no un problema del reporte en sí.</li>
         </ul></div></div>
+
+      <h3><span class="hn">12</span> 🧭 Caso práctico: armá tu proyecto de punta a punta en el trabajo</h3>
+      <p>Todo lo anterior en un solo recorrido narrativo, con las decisiones de <strong>equipo</strong> que no aparecen al practicar solo: ambientes separados, control de versiones, seguridad por rol y qué hacer cuando algo falla un lunes a la mañana. Usalo como plantilla la primera vez que armes un proyecto real en Fabric.</p>
+
+      <div class="blk obj"><div class="h"><svg class="ic"><use href="#i-b"/></svg> El caso</div><div class="b">
+        <p><strong>"Andes Market"</strong> (retail, nombre de ejemplo) hoy arma su reporte de ventas a mano: alguien exporta el ERP a Excel todos los lunes, lo cruza con un archivo de metas y lo manda por correo. Te piden reemplazar ese proceso por un dashboard que se actualice solo. Las fuentes son heterogéneas — como en casi cualquier trabajo real: <strong>SQL Server on-premises</strong> (el ERP), una <strong>API REST</strong> (el e-commerce) y un <strong>Excel manual</strong> que sigue existiendo (las metas, las carga el área comercial).</p></div></div>
+
+      <h4>La línea de tiempo completa</h4>
+      <div class="lanes">
+        <div class="lane"><div class="lb">1</div><div class="lc"><b>Levantar requerimientos</b><small>Brief de 8 puntos (<a href="#f0">Fase 0</a>): qué KPI reemplaza al Excel, quién lo va a mirar, con qué frecuencia</small></div></div>
+        <div class="lane"><div class="lb">2</div><div class="lc"><b>Tres workspaces</b><small><code>Andes-Dev</code>, <code>Andes-Test</code>, <code>Andes-Prod</code> (§04) — nunca un solo workspace para todo</small></div></div>
+        <div class="lane"><div class="lb">3</div><div class="lc"><b>Conectar Git</b><small>El workspace Dev se conecta a un repo (Azure DevOps o GitHub) desde el día uno, no al final</small></div></div>
+        <div class="lane"><div class="lb">4</div><div class="lc"><b>Ingesta multi-fuente</b><small>Gateway para el ERP on-prem, conector REST para la API, carga del Excel a Files (§05)</small></div></div>
+        <div class="lane"><div class="lb">5</div><div class="lc"><b>Bronze → Silver → Gold</b><small>Notebooks, con el Excel de metas unificado a la misma granularidad que las ventas (§06-§07)</small></div></div>
+        <div class="lane"><div class="lb">6</div><div class="lc"><b>Modelo semántico + seguridad</b><small>Relaciones, medidas DAX, y <strong>RLS</strong> si un gerente regional solo debe ver su región (§08)</small></div></div>
+        <div class="lane"><div class="lb">7</div><div class="lc"><b>Reporte + distribución</b><small>Se construye en Dev, se valida con el negocio en Test, y se distribuye en Prod vía <strong>App del workspace</strong> (§09)</small></div></div>
+        <div class="lane"><div class="lb">8</div><div class="lc"><b>Promover con Deployment Pipeline</b><small>Un clic mueve todos los ítems de Dev → Test → Prod, sin recrear nada a mano</small></div></div>
+        <div class="lane"><div class="lb">9</div><div class="lc"><b>Monitorear en producción</b><small>Monitoring hub + Capacity Metrics app — desde el primer día que el negocio empieza a usarlo</small></div></div>
+      </div>
+
+      <h4>🔀 Paso extra · Fuentes heterogéneas: el gateway on-premises</h4>
+      <p>El ERP vive en un SQL Server dentro de la red de la empresa, no en la nube. Fabric no puede llegar ahí directo — necesita un <strong>On-premises data gateway</strong>: un servicio liviano instalado en una máquina de la red interna que actúa de puente.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Fuente</th><th>Cómo se conecta</th><th>Dónde vive la credencial</th></tr></thead>
+        <tbody>
+          <tr><td>SQL Server on-premises (ERP)</td><td>On-premises data gateway</td><td>Configurada en el gateway, no en el pipeline — un admin de IT la gestiona</td></tr>
+          <tr><td>API REST (e-commerce)</td><td>Conector REST del Copy Data assistant</td><td>Connection de Fabric, con API key o OAuth</td></tr>
+          <tr><td>Excel de metas (manual)</td><td>Se sube a <code>Files/</code> del Lakehouse, o a un OneDrive/SharePoint sincronizado</td><td>No aplica — pero documentá quién lo actualiza y cuándo, es el eslabón más frágil</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note c"><b>El Excel manual es el punto que más se rompe</b>
+        No importa cuánto automatices el resto: si alguien sube el archivo con otro nombre de columna o se olvida de subirlo el lunes, el pipeline falla o —peor— corre con datos viejos sin avisar. Agregale un control de calidad (<a href="#f4">Fase 4</a>) que valide que el archivo llegó y tiene la fecha esperada, antes de dejarlo alimentar el Lakehouse.</div>
+
+      <h4>🔐 Paso extra · Seguridad: quién ve qué</h4>
+      <div class="tw"><table>
+        <thead><tr><th>Nivel</th><th>Qué controla</th><th>Ejemplo en el caso</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Roles de workspace</strong></td><td>Quién puede editar vs. solo ver ítems (Admin, Member, Contributor, Viewer)</td><td>El equipo de datos es Contributor en Dev; el negocio es Viewer en Prod</td></tr>
+          <tr><td><strong>RLS (Row-Level Security)</strong></td><td>Qué filas ve cada usuario dentro del mismo reporte</td><td>Un gerente de la región Norte solo ve filas <code>region = 'Norte'</code>, sin duplicar el reporte</td></tr>
+          <tr><td><strong>Microsoft Purview</strong></td><td>Catálogo, linaje y clasificación de sensibilidad de los datos</td><td>Marcar las tablas con montos y datos de clientes como "Confidencial"</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>🔁 Paso extra · CI/CD real: Git + Deployment Pipelines juntos</h4>
+      <div class="mermaid">
+graph LR
+    A[Dev workspace<br/>conectado a Git] -->|commit + push| B[Repo<br/>Azure DevOps / GitHub]
+    B -->|Pull Request + review| A
+    A -->|Deployment Pipeline| C[Test workspace]
+    C -->|validar con negocio| C
+    C -->|Deployment Pipeline| D[Prod workspace]
+      </div>
+      <p><strong>Git integration</strong> versiona el contenido (notebooks, definiciones de pipeline, del mismo modo que versionás código SQL) y da revisión por Pull Request. <strong>Deployment pipelines</strong> promueve ese contenido ya aprobado de un workspace a otro con un clic — son dos herramientas complementarias, no una alternativa a la otra.</p>
+      <div class="note o"><b>Reglas de despliegue para lo que cambia entre ambientes</b>
+        No todo debería ser idéntico entre Dev/Test/Prod: la cadena de conexión a un Lakehouse, por ejemplo, tiene que apuntar al Lakehouse de cada ambiente. Las <em>deployment rules</em> de Fabric permiten fijar ese tipo de parámetro por ambiente, para que el mismo contenido no rompa al promoverse.</div>
+
+      <h4>📈 Paso extra · Monitoreo continuo, no solo el día del lanzamiento</h4>
+      <div class="tw"><table>
+        <thead><tr><th>Herramienta</th><th>Para qué la usás</th><th>Cuándo mirarla</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Monitoring hub</strong></td><td>Ver qué corrió, cuánto tardó y qué falló — pipelines, notebooks, refrescos de modelo</td><td>Todos los días, después del refresh nocturno</td></tr>
+          <tr><td><strong>Capacity Metrics app</strong></td><td>Cuánta capacidad (CU) consume cada ítem, y si hay <em>throttling</em></td><td>Semanal, y siempre que un reporte se sienta lento sin razón aparente</td></tr>
+          <tr><td><strong>Alertas de capacidad</strong></td><td>Avisar antes de que la capacidad se sature en un pico (ej. cierre de mes)</td><td>Configurar una vez, revisar cuando dispara</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="blk trb"><div class="h"><svg class="ic"><use href="#i-tl"/></svg> Troubleshooting · Casos reales que se van a dar</div><div class="b">
+        <div class="tw"><table>
+          <thead><tr><th>Situación</th><th>Causa</th><th>Cómo lo identifico</th><th>Cómo lo soluciono</th></tr></thead>
+          <tbody>
+          <tr><td><strong>El ERP agregó una columna y el pipeline falla</strong></td><td>Schema drift: la fuente cambió y el mapeo del Copy Data ya no coincide</td><td>El pipeline falla con un error de mapeo de columnas en el paso de Copy</td><td>Editá el mapeo en la actividad Copy, o activá el mapeo automático si el asistente lo permite; agregá el chequeo a tus tests de calidad</td></tr>
+          <tr><td><strong>El reporte funciona en Test pero no en Prod</strong></td><td>Faltó una deployment rule: el ítem promovido sigue apuntando al Lakehouse de Test</td><td>El modelo semántico en Prod muestra datos de Test, o error de conexión</td><td>Configurar la deployment rule del parámetro (Lakehouse/conexión) específico de Prod</td></tr>
+          <tr><td><strong>El gateway se cae y el ERP deja de actualizarse</strong></td><td>La máquina donde corre el on-premises gateway se reinició, se actualizó o perdió red</td><td>Monitoring hub muestra el pipeline fallando en la actividad de origen SQL Server</td><td>Reiniciar/verificar el servicio del gateway en la máquina; para continuidad, instalar un segundo gateway en cluster de alta disponibilidad</td></tr>
+          <tr><td><strong>Reporte lento solo para el cierre de mes</strong></td><td>Pico de uso concurrente satura la capacidad (throttling)</td><td>Capacity Metrics app muestra delay/rejection alto en esa ventana</td><td>Escalonar refrescos pesados fuera del pico, o escalar temporalmente el SKU de capacidad</td></tr>
+          <tr><td><strong>Dos personas editan el mismo notebook y chocan</strong></td><td>Ambas trabajaban en el workspace Dev conectado a Git sin coordinar ramas</td><td>Conflicto de merge al sincronizar con el repo, igual que en <a href="#git">Git</a></td><td>Resolver el conflicto en el repo (no en el editor web de Fabric) y volver a sincronizar el workspace</td></tr>
+          <tr><td><strong>El Excel de metas no llegó el lunes</strong></td><td>El área comercial se olvidó de subirlo — el eslabón manual del proceso</td><td>El control de calidad de "archivo presente y con fecha esperada" falla antes de tocar el Lakehouse</td><td>El pipeline no debe avanzar sin ese archivo; alertar a quien lo sube, no reprocesar con datos viejos en silencio</td></tr>
+          </tbody>
+        </table></div>
+      </div></div>
+
+      <div class="blk res"><div class="h"><svg class="ic"><use href="#i-doc"/></svg> Resumen ejecutivo del caso</div><div class="b">
+        <p>Un proyecto de Fabric en un trabajo real no termina cuando el primer reporte se ve bien: necesita <strong>tres ambientes</strong> (no uno), <strong>Git desde el primer commit</strong> (no al final), <strong>seguridad pensada antes de compartir</strong> (RLS y roles, no confianza), y <strong>monitoreo activo</strong> desde el lanzamiento. Las fuentes reales casi nunca son una sola API prolija: son una mezcla de sistemas on-premises, APIs y algún Excel manual — diseñá el pipeline asumiendo eso desde el brief inicial.</p></div></div>
 
       <div class="nav-chap">
         <a href="#aws"><svg class="ic"><use href="#i-a"/></svg> Amazon Web Services</a>
@@ -5030,8 +5699,22 @@ Ayudame a prepararlo:
         </tbody>
       </table></div>
 
-      <div class="note o"><b>Pendiente para una v4</b>
-        Testing de pipelines, observabilidad/logging estructurado, performance tuning con casos medidos, CI/CD documentado y streaming (Auto Loader / Structured Streaming). Se agregan cuando se apliquen en un proyecto real, no antes — es lo que mantiene los ejemplos honestos.</div>
+      <h3><span class="hn">02</span> v3.1 — auditoría de vacíos: confiabilidad y producción</h3>
+      <p>Todo lo que la v3 dejaba pendiente para "una v4" se adelantó acá, después de auditar el documento contra lo que hace falta para sostener un proyecto real en cualquier empresa — no solo construirlo una vez.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Cambio</th><th>Detalle</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Nuevo grupo</strong></td><td>🛡️ <strong>Confiabilidad y producción</strong> en el menú — cinco secciones nuevas entre la orquestación y las plataformas.</td></tr>
+          <tr><td><strong>Nueva sección</strong></td><td><a href="#testing">Testing de pipelines</a> — datos sintéticos, test de idempotencia automatizado, contratos de esquema.</td></tr>
+          <tr><td><strong>Nueva sección</strong></td><td><a href="#observabilidad">Observabilidad y logging</a> — logging estructurado, freshness, SLA de datos, qué métricas exponer.</td></tr>
+          <tr><td><strong>Nueva sección</strong></td><td><a href="#cicd">CI/CD para proyectos de datos</a> — el patrón genérico (no solo el caso de Fabric), ejemplo con GitHub Actions, gestión de secretos por plataforma.</td></tr>
+          <tr><td><strong>Nueva sección</strong></td><td><a href="#iac">Infraestructura como código (Terraform)</a> — flujo init/plan/apply, ejemplo real, variables por ambiente.</td></tr>
+          <tr><td><strong>Nueva sección</strong></td><td><a href="#seguridad">Seguridad y gobierno de datos</a> — control de acceso, secretos, clasificación de PII, tabla comparativa entre las 4 plataformas.</td></tr>
+          <tr><td><strong>Ampliado</strong></td><td>Tabla de "Búsqueda rápida por situación" (§02 de <a href="#inicio">Cómo usar el playbook</a>) con las 5 situaciones nuevas.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note w"><b>Lo que queda deliberadamente afuera todavía</b>
+        Performance tuning con casos medidos (plan de ejecución, skew, Z-Order aplicado) y streaming (Auto Loader / Structured Streaming) — se agregan cuando se apliquen en un proyecto real, siguiendo el mismo criterio que el resto del documento: ejemplos de código propio, no teoría copiada.</div>
 
       <div class="nav-chap">
         <a href="#claude"><svg class="ic"><use href="#i-a"/></svg> Trabajar con IA</a>
