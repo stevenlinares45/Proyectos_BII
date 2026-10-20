@@ -1,0 +1,74 @@
+{
+ "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+ "name": "v03",
+ "position": {
+  "x": 520,
+  "y": 70,
+  "z": 3,
+  "height": 120,
+  "width": 230
+ },
+ "visual": {
+  "visualType": "card",
+  "query": {
+   "queryState": {
+    "Values": {
+     "projections": [
+      {
+       "field": {
+        "Measure": {
+         "Expression": {
+          "SourceRef": {
+           "Entity": "fact_ventas"
+          }
+         },
+         "Property": "Ticket Medio"
+        }
+       },
+       "queryRef": "fact_ventas.Ticket Medio",
+       "nativeQueryRef": "Ticket Medio"
+      }
+     ]
+    }
+   }
+  },
+  "drillFilterOtherVisuals": true,
+  "objects": {
+   "labels": [
+    {
+     "properties": {
+      "fontSize": {
+       "expr": {
+        "Literal": {
+         "Value": "26D"
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  "visualContainerObjects": {
+   "title": [
+    {
+     "properties": {
+      "show": {
+       "expr": {
+        "Literal": {
+         "Value": "true"
+        }
+       }
+      },
+      "text": {
+       "expr": {
+        "Literal": {
+         "Value": "'Ticket Medio'"
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}

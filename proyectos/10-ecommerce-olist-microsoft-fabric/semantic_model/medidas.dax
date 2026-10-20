@@ -1,0 +1,40 @@
+// Medidas DAX del modelo semantico sm_olist (Direct Lake sobre wh_olist)
+
+// Tabla: fact_pagos
+Valor Pagado = SUM(fact_pagos[valor_pago])
+
+// Tabla: fact_resenas
+Score Promedio = AVERAGE(fact_resenas[puntuacion])
+
+// Tabla: fact_resenas
+Resenas = COUNTROWS(fact_resenas)
+
+// Tabla: fact_ventas
+Ventas = SUM(fact_ventas[price])
+
+// Tabla: fact_ventas
+Flete = SUM(fact_ventas[freight_value])
+
+// Tabla: fact_ventas
+Pedidos = DISTINCTCOUNT(fact_ventas[order_id])
+
+// Tabla: fact_ventas
+Clientes unicos = COUNTROWS(SUMMARIZE(fact_ventas, dim_cliente[customer_unique_id]))
+
+// Tabla: fact_ventas
+Ticket Medio = DIVIDE([Ventas], [Pedidos])
+
+// Tabla: fact_ventas
+% Entrega a Tiempo = DIVIDE(CALCULATE(COUNTROWS(fact_ventas), fact_ventas[entrega_a_tiempo] = TRUE()), CALCULATE(COUNTROWS(fact_ventas), NOT ISBLANK(fact_ventas[entrega_a_tiempo])))
+
+// Tabla: fact_ventas
+Dias Entrega Prom = AVERAGE(fact_ventas[dias_entrega])
+
+// Tabla: fact_ventas
+Ventas YTD = TOTALYTD([Ventas], dim_fecha[fecha])
+
+// Tabla: fact_ventas
+Ventas Anio Anterior = CALCULATE([Ventas], SAMEPERIODLASTYEAR(dim_fecha[fecha]))
+
+// Tabla: fact_ventas
+Crecimiento YoY = DIVIDE([Ventas] - [Ventas Anio Anterior], [Ventas Anio Anterior])

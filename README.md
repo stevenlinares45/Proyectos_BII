@@ -23,6 +23,7 @@ Trabajo end-to-end en proyectos de BI: desde el levantamiento de requerimientos 
 | 07 | [Dashboard — Sector Alimentos y Bebidas](proyectos/07-dashboard-sector-alimentos/) | Reporte Power BI | Power BI |
 | 08 | [Generador de Estructura Estándar de Proyectos](proyectos/08-generador-estructura-proyectos/) | Herramienta propia en Python — automatiza la creación de la estructura estándar de carpetas para proyectos nuevos | Python |
 | 09 | [Transporte y Logística — Supply Chain Analytics](proyectos/09-transporte-logistica-supply-chain/) | Pipeline end-to-end (Bronze/Silver/Gold) sobre dataset público de logística; modelo dimensional para Power BI | Databricks · Delta Lake · SQL · Power BI |
+| 10 | [E-commerce Olist — Plataforma de datos en Microsoft Fabric](proyectos/10-ecommerce-olist-microsoft-fabric/) | Plataforma end-to-end (Lakehouse Bronze/Silver/Gold, Warehouse con carga idempotente, modelo semántico Direct Lake, informe y pipeline) sobre dataset público | Microsoft Fabric · PySpark · Spark SQL · T-SQL · DAX · Power BI |
 
 ## Recursos técnicos
 

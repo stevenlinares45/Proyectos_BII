@@ -1,0 +1,614 @@
+{
+  "compatibilityLevel": 1604,
+  "model": {
+    "culture": "en-US",
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "discourageImplicitMeasures": true,
+    "expressions": [
+      {
+        "name": "DatabaseQuery",
+        "kind": "m",
+        "expression": [
+          "let",
+          "    database = Sql.Database(\"a4mpytyfu7luhnj265gaddzry4-fkpst26sicqudgurp4t6reoqd4.datawarehouse.fabric.microsoft.com\", \"01fd14b4-d8c4-4bf5-a7bb-e8f2506c6759\")",
+          "in",
+          "    database"
+        ]
+      }
+    ],
+    "tables": [
+      {
+        "name": "dim_cliente",
+        "columns": [
+          {
+            "name": "customer_id",
+            "dataType": "string",
+            "sourceColumn": "customer_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "customer_unique_id",
+            "dataType": "string",
+            "sourceColumn": "customer_unique_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ciudad",
+            "dataType": "string",
+            "sourceColumn": "ciudad",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "estado",
+            "dataType": "string",
+            "sourceColumn": "estado",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "codigo_postal",
+            "dataType": "string",
+            "sourceColumn": "codigo_postal",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "lat",
+            "dataType": "double",
+            "sourceColumn": "lat",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "lng",
+            "dataType": "double",
+            "sourceColumn": "lng",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "dim_cliente",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "dim_cliente",
+              "schemaName": "dwh",
+              "expressionSource": "DatabaseQuery"
+            }
+          }
+        ]
+      },
+      {
+        "name": "dim_fecha",
+        "columns": [
+          {
+            "name": "fecha_key",
+            "dataType": "int64",
+            "sourceColumn": "fecha_key",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fecha",
+            "dataType": "dateTime",
+            "sourceColumn": "fecha",
+            "summarizeBy": "none",
+            "formatString": "Short Date",
+            "isKey": true
+          },
+          {
+            "name": "anio",
+            "dataType": "int64",
+            "sourceColumn": "anio",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "trimestre",
+            "dataType": "int64",
+            "sourceColumn": "trimestre",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "mes",
+            "dataType": "int64",
+            "sourceColumn": "mes",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "nombre_mes",
+            "dataType": "string",
+            "sourceColumn": "nombre_mes",
+            "summarizeBy": "none",
+            "sortByColumn": "mes"
+          },
+          {
+            "name": "dia_semana",
+            "dataType": "string",
+            "sourceColumn": "dia_semana",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "es_fin_semana",
+            "dataType": "boolean",
+            "sourceColumn": "es_fin_semana",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "dim_fecha",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "dim_fecha",
+              "schemaName": "dwh",
+              "expressionSource": "DatabaseQuery"
+            }
+          }
+        ],
+        "dataCategory": "Time"
+      },
+      {
+        "name": "dim_pedido",
+        "columns": [
+          {
+            "name": "order_id",
+            "dataType": "string",
+            "sourceColumn": "order_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "customer_id",
+            "dataType": "string",
+            "sourceColumn": "customer_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "estado_pedido",
+            "dataType": "string",
+            "sourceColumn": "estado_pedido",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fecha_compra",
+            "dataType": "dateTime",
+            "sourceColumn": "fecha_compra",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fecha_aprobacion",
+            "dataType": "dateTime",
+            "sourceColumn": "fecha_aprobacion",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fecha_envio",
+            "dataType": "dateTime",
+            "sourceColumn": "fecha_envio",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fecha_entrega",
+            "dataType": "dateTime",
+            "sourceColumn": "fecha_entrega",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fecha_entrega_estimada",
+            "dataType": "dateTime",
+            "sourceColumn": "fecha_entrega_estimada",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "dim_pedido",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "dim_pedido",
+              "schemaName": "dwh",
+              "expressionSource": "DatabaseQuery"
+            }
+          }
+        ]
+      },
+      {
+        "name": "dim_producto",
+        "columns": [
+          {
+            "name": "product_id",
+            "dataType": "string",
+            "sourceColumn": "product_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "categoria",
+            "dataType": "string",
+            "sourceColumn": "categoria",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "peso_g",
+            "dataType": "int64",
+            "sourceColumn": "peso_g",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "cantidad_fotos",
+            "dataType": "int64",
+            "sourceColumn": "cantidad_fotos",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "dim_producto",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "dim_producto",
+              "schemaName": "dwh",
+              "expressionSource": "DatabaseQuery"
+            }
+          }
+        ]
+      },
+      {
+        "name": "dim_vendedor",
+        "columns": [
+          {
+            "name": "seller_id",
+            "dataType": "string",
+            "sourceColumn": "seller_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ciudad",
+            "dataType": "string",
+            "sourceColumn": "ciudad",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "estado",
+            "dataType": "string",
+            "sourceColumn": "estado",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "codigo_postal",
+            "dataType": "string",
+            "sourceColumn": "codigo_postal",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "lat",
+            "dataType": "double",
+            "sourceColumn": "lat",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "lng",
+            "dataType": "double",
+            "sourceColumn": "lng",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "dim_vendedor",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "dim_vendedor",
+              "schemaName": "dwh",
+              "expressionSource": "DatabaseQuery"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fact_pagos",
+        "columns": [
+          {
+            "name": "order_id",
+            "dataType": "string",
+            "sourceColumn": "order_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "secuencia_pago",
+            "dataType": "int64",
+            "sourceColumn": "secuencia_pago",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "tipo_pago",
+            "dataType": "string",
+            "sourceColumn": "tipo_pago",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "cuotas",
+            "dataType": "int64",
+            "sourceColumn": "cuotas",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "valor_pago",
+            "dataType": "decimal",
+            "sourceColumn": "valor_pago",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "fact_pagos",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "fact_pagos",
+              "schemaName": "dwh",
+              "expressionSource": "DatabaseQuery"
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Valor Pagado",
+            "expression": "SUM(fact_pagos[valor_pago])",
+            "formatString": "#,0.00"
+          }
+        ]
+      },
+      {
+        "name": "fact_resenas",
+        "columns": [
+          {
+            "name": "review_id",
+            "dataType": "string",
+            "sourceColumn": "review_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "order_id",
+            "dataType": "string",
+            "sourceColumn": "order_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "puntuacion",
+            "dataType": "int64",
+            "sourceColumn": "puntuacion",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fecha_resena",
+            "dataType": "dateTime",
+            "sourceColumn": "fecha_resena",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fecha_respuesta",
+            "dataType": "dateTime",
+            "sourceColumn": "fecha_respuesta",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "fact_resenas",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "fact_resenas",
+              "schemaName": "dwh",
+              "expressionSource": "DatabaseQuery"
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Score Promedio",
+            "expression": "AVERAGE(fact_resenas[puntuacion])",
+            "formatString": "0.00"
+          },
+          {
+            "name": "Resenas",
+            "expression": "COUNTROWS(fact_resenas)",
+            "formatString": "#,0"
+          }
+        ]
+      },
+      {
+        "name": "fact_ventas",
+        "columns": [
+          {
+            "name": "order_id",
+            "dataType": "string",
+            "sourceColumn": "order_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "order_item_id",
+            "dataType": "int64",
+            "sourceColumn": "order_item_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "customer_id",
+            "dataType": "string",
+            "sourceColumn": "customer_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "product_id",
+            "dataType": "string",
+            "sourceColumn": "product_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "seller_id",
+            "dataType": "string",
+            "sourceColumn": "seller_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fecha_key",
+            "dataType": "int64",
+            "sourceColumn": "fecha_key",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "estado_pedido",
+            "dataType": "string",
+            "sourceColumn": "estado_pedido",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "price",
+            "dataType": "decimal",
+            "sourceColumn": "price",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "freight_value",
+            "dataType": "decimal",
+            "sourceColumn": "freight_value",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "total_linea",
+            "dataType": "decimal",
+            "sourceColumn": "total_linea",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "dias_entrega",
+            "dataType": "int64",
+            "sourceColumn": "dias_entrega",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "entrega_a_tiempo",
+            "dataType": "boolean",
+            "sourceColumn": "entrega_a_tiempo",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "fact_ventas",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "fact_ventas",
+              "schemaName": "dwh",
+              "expressionSource": "DatabaseQuery"
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Ventas",
+            "expression": "SUM(fact_ventas[price])",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "Flete",
+            "expression": "SUM(fact_ventas[freight_value])",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "Pedidos",
+            "expression": "DISTINCTCOUNT(fact_ventas[order_id])",
+            "formatString": "#,0"
+          },
+          {
+            "name": "Clientes unicos",
+            "expression": "COUNTROWS(SUMMARIZE(fact_ventas, dim_cliente[customer_unique_id]))",
+            "formatString": "#,0"
+          },
+          {
+            "name": "Ticket Medio",
+            "expression": "DIVIDE([Ventas], [Pedidos])",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "% Entrega a Tiempo",
+            "expression": "DIVIDE(CALCULATE(COUNTROWS(fact_ventas), fact_ventas[entrega_a_tiempo] = TRUE()), CALCULATE(COUNTROWS(fact_ventas), NOT ISBLANK(fact_ventas[entrega_a_tiempo])))",
+            "formatString": "0.0%"
+          },
+          {
+            "name": "Dias Entrega Prom",
+            "expression": "AVERAGE(fact_ventas[dias_entrega])",
+            "formatString": "0.0"
+          },
+          {
+            "name": "Ventas YTD",
+            "expression": "TOTALYTD([Ventas], dim_fecha[fecha])",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "Ventas Anio Anterior",
+            "expression": "CALCULATE([Ventas], SAMEPERIODLASTYEAR(dim_fecha[fecha]))",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "Crecimiento YoY",
+            "expression": "DIVIDE([Ventas] - [Ventas Anio Anterior], [Ventas Anio Anterior])",
+            "formatString": "0.0%"
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "a8fa5fae-2bd7-407d-b7bb-eaad990bf109",
+        "fromTable": "fact_ventas",
+        "fromColumn": "fecha_key",
+        "toTable": "dim_fecha",
+        "toColumn": "fecha_key"
+      },
+      {
+        "name": "7e30e528-7a5c-40b0-b8a8-943ec7f1c395",
+        "fromTable": "fact_ventas",
+        "fromColumn": "customer_id",
+        "toTable": "dim_cliente",
+        "toColumn": "customer_id"
+      },
+      {
+        "name": "81831643-813d-4025-a8f0-388f1334dc55",
+        "fromTable": "fact_ventas",
+        "fromColumn": "product_id",
+        "toTable": "dim_producto",
+        "toColumn": "product_id"
+      },
+      {
+        "name": "5916d44d-b0f0-424c-8cb7-94a5dd76f42b",
+        "fromTable": "fact_ventas",
+        "fromColumn": "seller_id",
+        "toTable": "dim_vendedor",
+        "toColumn": "seller_id"
+      },
+      {
+        "name": "85233c79-8179-4b15-b11a-24041ff5ea31",
+        "fromTable": "fact_ventas",
+        "fromColumn": "order_id",
+        "toTable": "dim_pedido",
+        "toColumn": "order_id"
+      },
+      {
+        "name": "6be32aeb-b003-4ff3-a589-cfc5e0b54166",
+        "fromTable": "fact_pagos",
+        "fromColumn": "order_id",
+        "toTable": "dim_pedido",
+        "toColumn": "order_id"
+      },
+      {
+        "name": "57c9f173-e2dc-4372-b9ce-820789949006",
+        "fromTable": "fact_resenas",
+        "fromColumn": "order_id",
+        "toTable": "dim_pedido",
+        "toColumn": "order_id"
+      }
+    ]
+  }
+}

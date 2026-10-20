@@ -1,0 +1,94 @@
+{
+ "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+ "name": "v08",
+ "position": {
+  "x": 660,
+  "y": 210,
+  "z": 8,
+  "height": 240,
+  "width": 600
+ },
+ "visual": {
+  "visualType": "barChart",
+  "query": {
+   "queryState": {
+    "Category": {
+     "projections": [
+      {
+       "field": {
+        "Column": {
+         "Expression": {
+          "SourceRef": {
+           "Entity": "dim_producto"
+          }
+         },
+         "Property": "categoria"
+        }
+       },
+       "queryRef": "dim_producto.categoria",
+       "nativeQueryRef": "categoria"
+      }
+     ]
+    },
+    "Y": {
+     "projections": [
+      {
+       "field": {
+        "Measure": {
+         "Expression": {
+          "SourceRef": {
+           "Entity": "fact_ventas"
+          }
+         },
+         "Property": "Ventas"
+        }
+       },
+       "queryRef": "fact_ventas.Ventas",
+       "nativeQueryRef": "Ventas"
+      }
+     ]
+    }
+   },
+   "sortDefinition": {
+    "sort": [
+     {
+      "field": {
+       "Measure": {
+        "Expression": {
+         "SourceRef": {
+          "Entity": "fact_ventas"
+         }
+        },
+        "Property": "Ventas"
+       }
+      },
+      "direction": "Descending"
+     }
+    ]
+   }
+  },
+  "drillFilterOtherVisuals": true,
+  "visualContainerObjects": {
+   "title": [
+    {
+     "properties": {
+      "show": {
+       "expr": {
+        "Literal": {
+         "Value": "true"
+        }
+       }
+      },
+      "text": {
+       "expr": {
+        "Literal": {
+         "Value": "'Ventas por categoría'"
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}

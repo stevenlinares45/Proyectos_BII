@@ -1,0 +1,74 @@
+{
+ "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+ "name": "v04",
+ "position": {
+  "x": 770,
+  "y": 70,
+  "z": 4,
+  "height": 120,
+  "width": 230
+ },
+ "visual": {
+  "visualType": "card",
+  "query": {
+   "queryState": {
+    "Values": {
+     "projections": [
+      {
+       "field": {
+        "Measure": {
+         "Expression": {
+          "SourceRef": {
+           "Entity": "fact_ventas"
+          }
+         },
+         "Property": "% Entrega a Tiempo"
+        }
+       },
+       "queryRef": "fact_ventas.% Entrega a Tiempo",
+       "nativeQueryRef": "% Entrega a Tiempo"
+      }
+     ]
+    }
+   }
+  },
+  "drillFilterOtherVisuals": true,
+  "objects": {
+   "labels": [
+    {
+     "properties": {
+      "fontSize": {
+       "expr": {
+        "Literal": {
+         "Value": "26D"
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  "visualContainerObjects": {
+   "title": [
+    {
+     "properties": {
+      "show": {
+       "expr": {
+        "Literal": {
+         "Value": "true"
+        }
+       }
+      },
+      "text": {
+       "expr": {
+        "Literal": {
+         "Value": "'% Entrega a Tiempo'"
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "version": "4.0",
+ "datasetReference": {
+  "byConnection": {
+   "connectionString": null,
+   "pbiServiceModelId": null,
+   "pbiModelVirtualServerName": "sobe_wowvirtualserver",
+   "pbiModelDatabaseName": "ca7988b3-bc2a-4d5d-859a-4700dab72fb1",
+   "name": "EntityDataSource",
+   "connectionType": "pbiServiceXmlaStyleLive"
+  }
+ }
+}

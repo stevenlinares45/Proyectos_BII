@@ -1,0 +1,77 @@
+{
+ "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+ "name": "v10",
+ "position": {
+  "x": 660,
+  "y": 465,
+  "z": 10,
+  "height": 240,
+  "width": 600
+ },
+ "visual": {
+  "visualType": "columnChart",
+  "query": {
+   "queryState": {
+    "Category": {
+     "projections": [
+      {
+       "field": {
+        "Column": {
+         "Expression": {
+          "SourceRef": {
+           "Entity": "dim_pedido"
+          }
+         },
+         "Property": "estado_pedido"
+        }
+       },
+       "queryRef": "dim_pedido.estado_pedido",
+       "nativeQueryRef": "estado_pedido"
+      }
+     ]
+    },
+    "Y": {
+     "projections": [
+      {
+       "field": {
+        "Measure": {
+         "Expression": {
+          "SourceRef": {
+           "Entity": "fact_resenas"
+          }
+         },
+         "Property": "Score Promedio"
+        }
+       },
+       "queryRef": "fact_resenas.Score Promedio",
+       "nativeQueryRef": "Score Promedio"
+      }
+     ]
+    }
+   }
+  },
+  "drillFilterOtherVisuals": true,
+  "visualContainerObjects": {
+   "title": [
+    {
+     "properties": {
+      "show": {
+       "expr": {
+        "Literal": {
+         "Value": "true"
+        }
+       }
+      },
+      "text": {
+       "expr": {
+        "Literal": {
+         "Value": "'Puntuación promedio por estado del pedido'"
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}
